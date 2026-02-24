@@ -41,7 +41,7 @@ export default function HomePage() {
 
     return (
         <div className="flex flex-col min-h-screen pb-20 bg-gray-50 dark:bg-gray-950 font-sans">
-            <div className="p-6 max-w-7xl mx-auto w-full">
+            <div className="p-4 max-w-7xl mx-auto w-full">
                 {/* Header Section */}
                 <h1 className="text-4xl font-light text-gray-900 dark:text-gray-100 leading-tight">
                     Find The <span className="font-bold">Best<br />Food</span> Around You
@@ -83,7 +83,7 @@ export default function HomePage() {
                 </div>
 
                 {/* Categories Section */}
-                <div className="py-8">
+                <div className="py-6">
                     <div className="flex gap-3 overflow-x-auto scrollbar-hide">
                         {categories.map(category => (
                             <button
@@ -101,12 +101,12 @@ export default function HomePage() {
                 </div>
 
                 {/* Rest of the content */}
-                <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+                <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 md:gap-4">
                     {filteredItems.map((item) => (
                         <div key={item.id} className="bg-white dark:bg-gray-900 rounded-2xl overflow-hidden shadow-[0_8px_30px_rgb(0,0,0,0.04)] dark:shadow-none border border-gray-100 dark:border-gray-800 relative flex flex-col hover:shadow-[0_8px_30px_rgb(0,0,0,0.08)] transition-all duration-300 cursor-pointer group">
 
                             <div className="relative w-full">
-                                <div className="w-full h-44 overflow-hidden bg-gray-100 dark:bg-gray-800">
+                                <div className="w-full h-40 md:h-56 overflow-hidden bg-gray-100 dark:bg-gray-800">
                                     <img
                                         src={item.image}
                                         alt={item.name}
