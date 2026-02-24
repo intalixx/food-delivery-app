@@ -117,7 +117,12 @@ export default function HomePage() {
 
                             <div className="w-full p-4 flex flex-col">
                                 <h3 className="font-bold text-[16px] text-gray-900 dark:text-white truncate">{item.name}</h3>
-                                <p className="text-[13px] text-gray-500 dark:text-gray-400 line-clamp-1 truncate">{item.description}</p>
+                                <p
+                                    className="text-[13px] text-gray-500 dark:text-gray-400 line-clamp-2"
+                                    title={item.description}
+                                >
+                                    {item.description}
+                                </p>
 
                                 {/* Bottom Row - Price */}
                                 <div className="w-full mt-4 flex justify-between items-center">
@@ -135,7 +140,7 @@ export default function HomePage() {
                                                 image: item.image
                                             })
                                         }}
-                                        className="h-7 px-4 flex items-center justify-center bg-white dark:bg-gray-900 text-primary border border-primary font-semibold text-[13px] rounded-md cursor-pointer"
+                                        className="px-4 py-1 bg-white dark:bg-gray-900 text-primary border border-primary font-bold text-[13px] rounded-md cursor-pointer"
                                     >
                                         ADD
                                     </button>
