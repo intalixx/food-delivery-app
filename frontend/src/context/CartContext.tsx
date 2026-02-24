@@ -1,5 +1,5 @@
 /* eslint-disable react-refresh/only-export-components */
-import { createContext, useState, ReactNode } from 'react';
+import { createContext, useState, useEffect, ReactNode } from 'react';
 export interface CartItem {
     id: number;
     name: string;
@@ -21,7 +21,36 @@ interface CartContextType {
 export const CartContext = createContext<CartContextType | undefined>(undefined);
 
 export function CartProvider({ children }: { children: ReactNode }) {
-    const [items, setItems] = useState<CartItem[]>([]);
+    const [items, setItems] = useState<CartItem[]>(() => {
+        try {
+            const savedItems = localStorage.getItem('cartItems');
+            const expiry = localStorage.getItem('cartExpiry');
+
+            if (savedItems && expiry) {
+                // If current time is past expiry, clear storage and return empty
+                if (new Date().getTime() > parseInt(expiry, 10)) {
+                    localStorage.removeItem('cartItems');
+                    localStorage.removeItem('cartExpiry');
+                    return [];
+                }
+                return JSON.parse(savedItems);
+            }
+        } catch (error) {
+            console.error('Error parsing cart from localStorage', error);
+        }
+        return [];
+    });
+
+    // Sync to local storage on every change and push expiry 30 days
+    useEffect(() => {
+        try {
+            localStorage.setItem('cartItems', JSON.stringify(items));
+            const expiryDate = new Date().getTime() + 30 * 24 * 60 * 60 * 1000; // 30 Days
+            localStorage.setItem('cartExpiry', expiryDate.toString());
+        } catch (error) {
+            console.error('Error saving cart to localStorage', error);
+        }
+    }, [items]);
 
     const addToCart = (product: Omit<CartItem, 'quantity'>) => {
         setItems(prev => {
