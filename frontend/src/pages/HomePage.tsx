@@ -140,7 +140,7 @@ export default function HomePage() {
                                                 image: item.image
                                             })
                                         }}
-                                        className="px-4 py-1 bg-white dark:bg-gray-900 text-primary border border-primary font-bold text-[13px] rounded-md cursor-pointer"
+                                        className="px-3 py-1 bg-white dark:bg-gray-900 text-primary border border-primary font-bold text-[11px] rounded-md cursor-pointer"
                                     >
                                         ADD
                                     </button>
