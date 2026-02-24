@@ -1,9 +1,10 @@
 import { useCart } from '../hooks/useCart';
 import { IndianRupee, Minus, Plus, ChevronLeft, ShoppingCart, Trash2 } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
+import { motion, AnimatePresence } from 'framer-motion';
 
 export default function CartPage() {
-    const { items, updateQuantity, totalPrice, clearCart } = useCart();
+    const { items, updateQuantity, totalPrice, clearCart, removeFromCart } = useCart();
     const navigate = useNavigate();
 
     const totalItemCount = items.reduce((acc, item) => acc + item.quantity, 0);
@@ -46,52 +47,81 @@ export default function CartPage() {
 
                 {/* Items List */}
                 <div className="flex flex-col gap-4">
-                    {items.map(item => (
-                        <div key={item.id} className="flex items-center bg-white dark:bg-gray-900 rounded-4xl p-3 border border-gray-200 dark:border-gray-700">
-                            {/* Image */}
-                            <div className="w-15 h-15 shrink-0 rounded-full overflow-hidden bg-gray-50 dark:bg-gray-800">
-                                <img src={item.image} alt={item.name} className="w-full h-full object-cover" />
-                            </div>
-
-                            {/* Product Info */}
-                            <div className="flex flex-col ml-3 flex-1">
-                                <h3 className="font-bold text-[15px] text-gray-800 dark:text-white line-clamp-1">{item.name}</h3>
-                                <div className="text-[13px] font-bold text-gray-500 flex items-center mt-0.5">
-                                    <IndianRupee className="w-3 h-3 stroke-3" />
-                                    {item.price}
+                    <AnimatePresence mode="popLayout">
+                        {items.map(item => (
+                            <motion.div
+                                layout
+                                key={item.id}
+                                initial={{ opacity: 0, scale: 0.9 }}
+                                animate={{ opacity: 1, scale: 1 }}
+                                exit={{ opacity: 0, scale: 0.9, transition: { duration: 0.2 } }}
+                                className="relative rounded-4xl bg-red-100 dark:bg-red-900/30 w-full"
+                            >
+                                <div className="absolute inset-0 flex items-center justify-between px-5 text-red-500 rounded-4xl border border-red-200 dark:border-red-900/50">
+                                    <Trash2 className="w-5 h-5" />
+                                    <span className="text-[12px] font-bold tracking-wider uppercase opacity-60">Swipe to delete</span>
+                                    <Trash2 className="w-5 h-5" />
                                 </div>
-                            </div>
 
-                            {/* Controls & Total */}
-                            <div className="flex items-center ml-2 shrink-0 pr-1">
-                                <div className="flex flex-col items-center">
-                                    <div className="flex items-center">
-                                        <button
-                                            onClick={() => updateQuantity(item.id, item.quantity - 1)}
-                                            className="w-5.5 h-5.5 rounded-full bg-gray-900 dark:bg-gray-700 text-white flex items-center justify-center cursor-pointer active:scale-95 transition-transform"
-                                        >
-                                            <Minus className="w-2.5 h-2.5 stroke-[3.5]" />
-                                        </button>
-
-                                        <span className="text-[14px] font-bold text-gray-800 dark:text-white min-w-7 text-center">
-                                            {item.quantity < 10 ? `0${item.quantity}` : item.quantity}
-                                        </span>
-
-                                        <button
-                                            onClick={() => updateQuantity(item.id, item.quantity + 1)}
-                                            className="w-5.5 h-5.5 rounded-full bg-gray-900 dark:bg-gray-700 text-white flex items-center justify-center cursor-pointer active:scale-95 transition-transform"
-                                        >
-                                            <Plus className="w-2.5 h-2.5 stroke-[3.5]" />
-                                        </button>
+                                <motion.div
+                                    className="flex items-center w-full bg-white dark:bg-gray-900 rounded-4xl p-3 border border-gray-200 dark:border-gray-700 relative z-10"
+                                    drag="x"
+                                    dragConstraints={{ left: 0, right: 0 }}
+                                    dragElastic={0.8}
+                                    whileTap={{ cursor: 'grabbing' }}
+                                    onDragEnd={(e, { offset }) => {
+                                        if (Math.abs(offset.x) > 100) {
+                                            removeFromCart(item.id);
+                                        }
+                                    }}
+                                >
+                                    {/* Image */}
+                                    <div className="w-15 h-15 shrink-0 rounded-full overflow-hidden bg-gray-50 dark:bg-gray-800">
+                                        <img src={item.image} alt={item.name} className="w-full h-full object-cover pointer-events-none" />
                                     </div>
-                                    <div className="text-[12px] font-bold text-gray-400 dark:text-gray-500 mt-1 flex items-center">
-                                        <IndianRupee className="w-2.5 h-2.5 stroke-3" />
-                                        {item.price * item.quantity}
+
+                                    {/* Product Info */}
+                                    <div className="flex flex-col ml-3 flex-1">
+                                        <h3 className="font-bold text-[15px] text-gray-800 dark:text-white line-clamp-1">{item.name}</h3>
+                                        <div className="text-[13px] font-bold text-gray-500 flex items-center mt-0.5">
+                                            <IndianRupee className="w-3 h-3 stroke-3" />
+                                            {item.price}
+                                        </div>
                                     </div>
-                                </div>
-                            </div>
-                        </div>
-                    ))}
+
+                                    {/* Controls & Total */}
+                                    <div className="flex items-center ml-2 shrink-0 pr-1">
+                                        <div className="flex flex-col items-center">
+                                            <div className="flex items-center">
+                                                <button
+                                                    onClick={() => updateQuantity(item.id, item.quantity - 1)}
+                                                    className="w-5.5 h-5.5 rounded-full bg-gray-900 dark:bg-gray-700 text-white flex items-center justify-center cursor-pointer active:scale-95 transition-transform"
+                                                >
+                                                    <Minus className="w-2.5 h-2.5 stroke-[3.5]" />
+                                                </button>
+
+                                                <span className="text-[14px] font-bold text-gray-800 dark:text-white min-w-7 text-center">
+                                                    {item.quantity < 10 ? `0${item.quantity}` : item.quantity}
+                                                </span>
+
+                                                <button
+                                                    onClick={() => updateQuantity(item.id, item.quantity + 1)}
+                                                    className="w-5.5 h-5.5 rounded-full bg-gray-900 dark:bg-gray-700 text-white flex items-center justify-center cursor-pointer active:scale-95 transition-transform"
+                                                >
+                                                    <Plus className="w-2.5 h-2.5 stroke-[3.5]" />
+                                                </button>
+                                            </div>
+                                            <div className="text-[12px] font-bold text-gray-400 dark:text-gray-500 mt-1 flex items-center">
+                                                <IndianRupee className="w-2.5 h-2.5 stroke-3" />
+                                                {item.price * item.quantity}
+                                            </div>
+                                        </div>
+                                    </div>
+                                </motion.div>
+
+                            </motion.div>
+                        ))}
+                    </AnimatePresence>
                 </div>
 
 
