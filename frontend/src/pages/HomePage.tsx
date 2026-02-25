@@ -119,8 +119,8 @@ export default function HomePage() {
                 </div>
 
                 {/* Categories Section */}
-                <div className="py-6">
-                    <div className="flex gap-3 overflow-x-auto scrollbar-hide">
+                <div className="py-6 relative z-10">
+                    <div className="flex gap-3 overflow-x-auto scrollbar-hide pb-1 -mx-4 px-4">
                         {categoryTabs.map(category => (
                             <button
                                 key={category}
