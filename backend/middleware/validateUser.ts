@@ -1,11 +1,11 @@
 import { Request, Response, NextFunction } from 'express';
 
 const USER_NAME_MAX = 50;
-const MOBILE_MAX = 15;
+const MOBILE_MAX = 10;
 const EMAIL_MAX = 100;
 
 const USER_NAME_REGEX = /^[a-zA-Z\s\-']+$/;
-const MOBILE_REGEX = /^\+?[0-9\s\-]{7,15}$/;
+const MOBILE_REGEX = /^[0-9]{10}$/;
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const VALID_GENDERS = ['male', 'female'];
 
@@ -34,10 +34,8 @@ export function validateCreateUser(req: Request, res: Response, next: NextFuncti
         const trimmed = mobile_number.trim();
         if (trimmed.length === 0) {
             errors.push('mobile_number cannot be empty');
-        } else if (trimmed.length > MOBILE_MAX) {
-            errors.push(`mobile_number must be at most ${MOBILE_MAX} characters`);
         } else if (!MOBILE_REGEX.test(trimmed)) {
-            errors.push('mobile_number must be a valid phone number');
+            errors.push('mobile_number must be exactly 10 digits');
         }
     }
 
@@ -117,10 +115,8 @@ export function validateUpdateUser(req: Request, res: Response, next: NextFuncti
             const trimmed = mobile_number.trim();
             if (trimmed.length === 0) {
                 errors.push('mobile_number cannot be empty');
-            } else if (trimmed.length > MOBILE_MAX) {
-                errors.push(`mobile_number must be at most ${MOBILE_MAX} characters`);
             } else if (!MOBILE_REGEX.test(trimmed)) {
-                errors.push('mobile_number must be a valid phone number');
+                errors.push('mobile_number must be exactly 10 digits');
             }
         }
     }

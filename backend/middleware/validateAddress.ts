@@ -1,12 +1,12 @@
 import { Request, Response, NextFunction } from 'express';
 
 const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
-const VALID_ADDRESS_TYPES = ['Home', 'Work', 'Other'];
-const PINCODE_REGEX = /^[0-9]{4,10}$/;
-const MOBILE_REGEX = /^\+?[0-9\s\-]{7,15}$/;
+
+const PINCODE_REGEX = /^[0-9]{6}$/;
+const MOBILE_REGEX = /^[0-9]{10}$/;
 
 export function validateCreateAddress(req: Request, res: Response, next: NextFunction): void {
-    const { user_id, address_type, location, pincode, city, state, house_number, street_locality, mobile } = req.body;
+    const { user_id, save_as, pincode, city, state, house_number, street_locality, mobile } = req.body;
     const errors: string[] = [];
 
     // user_id — required
@@ -16,20 +16,13 @@ export function validateCreateAddress(req: Request, res: Response, next: NextFun
         errors.push('user_id must be a valid UUID');
     }
 
-    // address_type — required, enum
-    if (!address_type || typeof address_type !== 'string') {
-        errors.push('address_type is required and must be a string');
-    } else if (!VALID_ADDRESS_TYPES.includes(address_type)) {
-        errors.push('address_type must be one of: Home, Work, Other');
-    }
-
-    // location — optional
-    if (location !== undefined && location !== null && location !== '') {
-        if (typeof location !== 'string') {
-            errors.push('location must be a string');
-        } else if (location.trim().length > 100) {
-            errors.push('location must be at most 100 characters');
-        }
+    // save_as — required
+    if (!save_as || typeof save_as !== 'string') {
+        errors.push('save_as is required and must be a string');
+    } else if (save_as.trim().length === 0) {
+        errors.push('save_as cannot be empty');
+    } else if (save_as.trim().length > 50) {
+        errors.push('save_as must be at most 50 characters');
     }
 
     // pincode — required
@@ -40,7 +33,7 @@ export function validateCreateAddress(req: Request, res: Response, next: NextFun
         if (trimmed.length === 0) {
             errors.push('pincode cannot be empty');
         } else if (!PINCODE_REGEX.test(trimmed)) {
-            errors.push('pincode must be 4-10 digits');
+            errors.push('pincode must be exactly 6 digits');
         }
     }
 
@@ -100,7 +93,7 @@ export function validateCreateAddress(req: Request, res: Response, next: NextFun
         if (trimmed.length === 0) {
             errors.push('mobile cannot be empty');
         } else if (!MOBILE_REGEX.test(trimmed)) {
-            errors.push('mobile must be a valid phone number');
+            errors.push('mobile must be exactly 10 digits');
         }
     }
 
@@ -110,43 +103,36 @@ export function validateCreateAddress(req: Request, res: Response, next: NextFun
     }
 
     // Sanitize
+    req.body.save_as = save_as.trim();
     req.body.pincode = pincode.trim();
     req.body.city = city.trim();
     req.body.state = state.trim();
     req.body.house_number = house_number.trim();
     req.body.street_locality = street_locality.trim();
     req.body.mobile = mobile.trim();
-    if (location) req.body.location = location.trim();
 
     next();
 }
 
 export function validateUpdateAddress(req: Request, res: Response, next: NextFunction): void {
-    const { address_type, location, pincode, city, state, house_number, street_locality, mobile } = req.body;
+    const { save_as, pincode, city, state, house_number, street_locality, mobile } = req.body;
     const errors: string[] = [];
 
     // At least one field must be provided
-    if (address_type === undefined && location === undefined && pincode === undefined &&
+    if (save_as === undefined && pincode === undefined &&
         city === undefined && state === undefined && house_number === undefined &&
         street_locality === undefined && mobile === undefined) {
         errors.push('At least one field must be provided for update');
     }
 
-    // address_type — optional, enum
-    if (address_type !== undefined) {
-        if (typeof address_type !== 'string') {
-            errors.push('address_type must be a string');
-        } else if (!VALID_ADDRESS_TYPES.includes(address_type)) {
-            errors.push('address_type must be one of: Home, Work, Other');
-        }
-    }
-
-    // location — optional
-    if (location !== undefined && location !== null && location !== '') {
-        if (typeof location !== 'string') {
-            errors.push('location must be a string');
-        } else if (location.trim().length > 100) {
-            errors.push('location must be at most 100 characters');
+    // save_as — optional
+    if (save_as !== undefined) {
+        if (typeof save_as !== 'string') {
+            errors.push('save_as must be a string');
+        } else if (save_as.trim().length === 0) {
+            errors.push('save_as cannot be empty');
+        } else if (save_as.trim().length > 50) {
+            errors.push('save_as must be at most 50 characters');
         }
     }
 
@@ -159,7 +145,7 @@ export function validateUpdateAddress(req: Request, res: Response, next: NextFun
             if (trimmed.length === 0) {
                 errors.push('pincode cannot be empty');
             } else if (!PINCODE_REGEX.test(trimmed)) {
-                errors.push('pincode must be 4-10 digits');
+                errors.push('pincode must be exactly 6 digits');
             }
         }
     }
@@ -229,7 +215,7 @@ export function validateUpdateAddress(req: Request, res: Response, next: NextFun
             if (trimmed.length === 0) {
                 errors.push('mobile cannot be empty');
             } else if (!MOBILE_REGEX.test(trimmed)) {
-                errors.push('mobile must be a valid phone number');
+                errors.push('mobile must be exactly 10 digits');
             }
         }
     }
@@ -240,13 +226,13 @@ export function validateUpdateAddress(req: Request, res: Response, next: NextFun
     }
 
     // Sanitize
+    if (save_as) req.body.save_as = save_as.trim();
     if (pincode) req.body.pincode = pincode.trim();
     if (city) req.body.city = city.trim();
     if (state) req.body.state = state.trim();
     if (house_number) req.body.house_number = house_number.trim();
     if (street_locality) req.body.street_locality = street_locality.trim();
     if (mobile) req.body.mobile = mobile.trim();
-    if (location) req.body.location = location.trim();
 
     next();
 }

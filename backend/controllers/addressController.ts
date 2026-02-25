@@ -43,7 +43,7 @@ export const AddressController = {
     // POST /api/addresses
     async create(req: Request, res: Response): Promise<void> {
         try {
-            const { user_id, address_type, location, pincode, city, state, house_number, street_locality, mobile } = req.body;
+            const { user_id, save_as, pincode, city, state, house_number, street_locality, mobile } = req.body;
 
             // Verify user exists
             const user = await UserModel.getById(user_id);
@@ -53,7 +53,7 @@ export const AddressController = {
             }
 
             const address = await AddressModel.create({
-                user_id, address_type, location, pincode, city, state, house_number, street_locality, mobile
+                user_id, save_as, pincode, city, state, house_number, street_locality, mobile
             });
             res.status(201).json({ success: true, data: address });
         } catch (error: any) {
@@ -75,9 +75,9 @@ export const AddressController = {
                 return;
             }
 
-            const { address_type, location, pincode, city, state, house_number, street_locality, mobile } = req.body;
+            const { save_as, pincode, city, state, house_number, street_locality, mobile } = req.body;
             const address = await AddressModel.update(req.params.id as string, {
-                address_type, location, pincode, city, state, house_number, street_locality, mobile
+                save_as, pincode, city, state, house_number, street_locality, mobile
             });
             res.json({ success: true, data: address });
         } catch (error) {

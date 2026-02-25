@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Phone, ArrowLeft, User, MapPin, Loader2 } from 'lucide-react';
+import { Phone, ArrowLeft, User, MapPin, Loader2, X } from 'lucide-react';
 import { toast } from 'sonner';
 import {
     Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription
@@ -39,25 +39,58 @@ export default function AuthModal({ open, onOpenChange, mode }: AuthModalProps) 
     const handleSendOtp = async () => {
         if (!isPhoneValid) return;
         setIsSubmitting(true);
-        // Simulate OTP send
-        await new Promise(r => setTimeout(r, 800));
-        setIsSubmitting(false);
-        setStep('otp');
-        toast.success('OTP sent to +91 ' + phone);
+        try {
+            const res = await fetch(`${import.meta.env.VITE_API_BASE_URL}/auth/send-otp`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ mobile_number: phone })
+            });
+            const data = await res.json();
+
+            if (res.ok) {
+                setStep('otp');
+                // The backend sends back the OTP for testing purposes
+                toast.success(`OTP is: ${data.otp}`, {
+                    duration: 10000,
+                    position: 'top-center',
+                });
+            } else {
+                toast.error(data.errors?.[0] || 'Failed to send OTP');
+            }
+        } catch {
+            toast.error('Network error. Failed to send OTP.');
+        } finally {
+            setIsSubmitting(false);
+        }
     };
 
     const handleVerifyOtp = async () => {
         if (!isOtpValid) return;
         setIsSubmitting(true);
-        // Simulate verification
-        await new Promise(r => setTimeout(r, 800));
-        setIsSubmitting(false);
+        try {
+            const res = await fetch(`${import.meta.env.VITE_API_BASE_URL}/auth/verify-otp`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ mobile_number: phone, otp })
+            });
+            const data = await res.json();
 
-        if (mode === 'signup') {
-            setStep('signup');
-        } else {
-            toast.success('Logged in successfully!');
-            handleClose();
+            if (res.ok) {
+                if (data.isNewUser) {
+                    setStep('signup');
+                    toast.info('Please complete your profile');
+                } else {
+                    toast.success('Logged in successfully!');
+                    handleClose();
+                    // Optional: refresh user or set global state if needed
+                }
+            } else {
+                toast.error(data.errors?.[0] || 'Invalid OTP');
+            }
+        } catch {
+            toast.error('Network error. Failed to verify OTP.');
+        } finally {
+            setIsSubmitting(false);
         }
     };
 
@@ -66,15 +99,39 @@ export default function AuthModal({ open, onOpenChange, mode }: AuthModalProps) 
             toast.error('Please fill all fields');
             return;
         }
-        if (!/^[0-9]{4,10}$/.test(pincode.trim())) {
-            toast.error('Invalid pincode');
+        if (!/^[0-9]{6}$/.test(pincode.trim())) {
+            toast.error('Pincode must be exactly 6 digits');
             return;
         }
+
         setIsSubmitting(true);
-        await new Promise(r => setTimeout(r, 800));
-        setIsSubmitting(false);
-        toast.success('Account created successfully!');
-        handleClose();
+        try {
+            const res = await fetch(`${import.meta.env.VITE_API_BASE_URL}/auth/signup`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    mobile_number: phone,
+                    user_name: name,
+                    house_number: houseNumber,
+                    street_locality: streetLocality,
+                    city,
+                    state,
+                    pincode
+                })
+            });
+            const data = await res.json();
+
+            if (res.ok) {
+                toast.success('Account created successfully!');
+                handleClose();
+            } else {
+                toast.error(data.errors?.[0] || 'Failed to sign up');
+            }
+        } catch {
+            toast.error('Network error. Failed to sign up.');
+        } finally {
+            setIsSubmitting(false);
+        }
     };
 
     const handleClose = () => {
@@ -105,9 +162,19 @@ export default function AuthModal({ open, onOpenChange, mode }: AuthModalProps) 
 
     return (
         <Dialog open={open} onOpenChange={handleClose}>
-            <DialogContent className="sm:max-w-md p-0 overflow-hidden" showCloseButton={false}>
+            <DialogContent
+                className="sm:max-w-md p-0 overflow-hidden"
+                showCloseButton={false}
+                onInteractOutside={(e) => e.preventDefault()}
+            >
                 {/* Header */}
-                <div className="bg-primary/5 dark:bg-primary/10 p-6 pb-4">
+                <div className="bg-primary/5 dark:bg-primary/10 p-6 pb-4 relative">
+                    <button
+                        onClick={handleClose}
+                        className="absolute top-4 right-4 p-2 text-red-500 hover:bg-red-50 dark:hover:bg-red-500/10 rounded-full transition-colors cursor-pointer"
+                    >
+                        <X className="w-5 h-5" />
+                    </button>
                     <DialogHeader>
                         <div className="flex items-center gap-3">
                             {step !== 'phone' && (
@@ -120,7 +187,7 @@ export default function AuthModal({ open, onOpenChange, mode }: AuthModalProps) 
                             )}
                             <div>
                                 <DialogTitle className="text-xl font-bold text-gray-900 dark:text-white">
-                                    {step === 'phone' && (mode === 'login' ? 'Welcome back' : 'Create account')}
+                                    {step === 'phone' && (mode === 'login' ? 'Welcome back' : 'Create Account')}
                                     {step === 'otp' && 'Verify OTP'}
                                     {step === 'signup' && 'Complete your profile'}
                                 </DialogTitle>
@@ -205,7 +272,7 @@ export default function AuthModal({ open, onOpenChange, mode }: AuthModalProps) 
                                 <button
                                     onClick={() => {
                                         setOtp('');
-                                        toast.success('OTP resent to +91 ' + phone);
+                                        handleSendOtp();
                                     }}
                                     className="text-xs text-primary font-semibold hover:underline cursor-pointer"
                                 >
@@ -290,7 +357,7 @@ export default function AuthModal({ open, onOpenChange, mode }: AuthModalProps) 
                                         type="text"
                                         inputMode="numeric"
                                         value={pincode}
-                                        onChange={(e) => setPincode(e.target.value.replace(/\D/g, '').slice(0, 10))}
+                                        onChange={(e) => setPincode(e.target.value.replace(/\D/g, '').slice(0, 6))}
                                         placeholder="Pincode *"
                                         className="w-full bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl px-4 py-3 text-sm text-gray-900 dark:text-white placeholder-gray-400 outline-none focus:border-primary/50 transition-colors"
                                     />

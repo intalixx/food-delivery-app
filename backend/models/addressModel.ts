@@ -3,8 +3,7 @@ import pool from '../config/db';
 export interface Address {
     id: string;
     user_id: string;
-    address_type: 'Home' | 'Work' | 'Other';
-    location: string | null;
+    save_as: string;
     pincode: string;
     city: string;
     state: string;
@@ -33,9 +32,9 @@ export const AddressModel = {
 
     async create(data: Omit<Address, 'id' | 'created_at' | 'updated_at'>): Promise<Address> {
         const result = await pool.query(
-            `INSERT INTO addresses (user_id, address_type, location, pincode, city, state, house_number, street_locality, mobile)
-             VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9) RETURNING *`,
-            [data.user_id, data.address_type, data.location || null, data.pincode, data.city, data.state, data.house_number, data.street_locality, data.mobile]
+            `INSERT INTO addresses (user_id, save_as, pincode, city, state, house_number, street_locality, mobile)
+             VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING *`,
+            [data.user_id, data.save_as, data.pincode, data.city, data.state, data.house_number, data.street_locality, data.mobile]
         );
         return result.rows[0];
     },
@@ -46,8 +45,7 @@ export const AddressModel = {
         let paramIndex = 1;
 
         const fieldMap: Record<string, string | null | undefined> = {
-            address_type: fields.address_type,
-            location: fields.location,
+            save_as: fields.save_as,
             pincode: fields.pincode,
             city: fields.city,
             state: fields.state,

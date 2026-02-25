@@ -136,6 +136,12 @@
     padding-right: 0 !important;
     margin-right: 0 !important;
     overflow: auto !important;
+    pointer-events: auto !important;
+  }
+
+  /* Ensure Toaster remains interactive when modal is open */
+  [data-sonner-toaster] {
+    pointer-events: auto !important;
   }
 }
 
