@@ -26,8 +26,12 @@ app.get('/api/health', (_req, res) => {
 // Routes
 import categoryRoutes from './routes/categoryRoutes';
 import productRoutes from './routes/productRoutes';
+import userRoutes from './routes/userRoutes';
+import addressRoutes from './routes/addressRoutes';
 app.use('/api/categories', categoryRoutes);
 app.use('/api/products', productRoutes);
+app.use('/api/users', userRoutes);
+app.use('/api/addresses', addressRoutes);
 
 // Start server
 app.listen(PORT, () => {
