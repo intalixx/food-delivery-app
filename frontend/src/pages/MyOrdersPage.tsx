@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { IndianRupee, ChevronLeft, ChevronDown } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
+import OrderStatusBadge from '@/components/shared/OrderStatusBadge';
 
 const dummyOrders = [
     {
@@ -11,7 +12,7 @@ const dummyOrders = [
         quantity: 2,
         image: 'https://images.unsplash.com/photo-1512621776951-a57141f2eefd?w=400',
         date: '25 Feb, 2026',
-        status: 'Delivered'
+        status: 'Order Received'
     },
     {
         id: "ORD-124",
@@ -20,7 +21,7 @@ const dummyOrders = [
         quantity: 1,
         image: 'https://images.unsplash.com/photo-1568901346375-23c9450c58cd?w=400',
         date: '21 Feb, 2026',
-        status: 'Delivered'
+        status: 'Preparing'
     },
     {
         id: "ORD-125",
@@ -29,7 +30,7 @@ const dummyOrders = [
         quantity: 3,
         image: 'https://images.unsplash.com/photo-1628840042765-356cda07504e?w=400',
         date: '15 Feb, 2026',
-        status: 'Delivered'
+        status: 'Out for Delivery'
     },
     {
         id: "ORD-126",
@@ -84,9 +85,7 @@ export default function MyOrdersPage() {
                                         <IndianRupee className="w-3.5 h-3.5 stroke-[2.5]" />
                                         {item.price * item.quantity}
                                     </div>
-                                    <span className="text-green-600 dark:text-green-500 bg-green-50 dark:bg-green-900/30 px-2.5 py-0.5 rounded-full text-[11px] font-semibold">
-                                        {item.status}
-                                    </span>
+                                    <OrderStatusBadge status={item.status} />
                                 </div>
                             </div>
 
