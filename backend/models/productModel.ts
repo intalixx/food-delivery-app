@@ -12,8 +12,13 @@ export interface Product {
 }
 
 export const ProductModel = {
-    async getAll(): Promise<Product[]> {
-        const result = await pool.query('SELECT * FROM products ORDER BY created_at DESC');
+    async getAll(): Promise<(Product & { category_name: string })[]> {
+        const result = await pool.query(
+            `SELECT p.*, c.category_name
+             FROM products p
+             LEFT JOIN categories c ON p.category_id = c.id
+             ORDER BY p.created_at DESC`
+        );
         return result.rows;
     },
 

@@ -1,7 +1,8 @@
 /* eslint-disable react-refresh/only-export-components */
 import { createContext, useState, useEffect, ReactNode } from 'react';
+
 export interface CartItem {
-    id: number;
+    id: string;
     name: string;
     price: number;
     image: string;
@@ -11,8 +12,8 @@ export interface CartItem {
 interface CartContextType {
     items: CartItem[];
     addToCart: (item: Omit<CartItem, 'quantity'>) => void;
-    removeFromCart: (id: number) => void;
-    updateQuantity: (id: number, quantity: number) => void;
+    removeFromCart: (id: string) => void;
+    updateQuantity: (id: string, quantity: number) => void;
     clearCart: () => void;
     totalItems: number;
     totalPrice: number;
@@ -27,7 +28,6 @@ export function CartProvider({ children }: { children: ReactNode }) {
             const expiry = localStorage.getItem('cartExpiry');
 
             if (savedItems && expiry) {
-                // If current time is past expiry, clear storage and return empty
                 if (new Date().getTime() > parseInt(expiry, 10)) {
                     localStorage.removeItem('cartItems');
                     localStorage.removeItem('cartExpiry');
@@ -41,11 +41,10 @@ export function CartProvider({ children }: { children: ReactNode }) {
         return [];
     });
 
-    // Sync to local storage on every change and push expiry 30 days
     useEffect(() => {
         try {
             localStorage.setItem('cartItems', JSON.stringify(items));
-            const expiryDate = new Date().getTime() + 30 * 24 * 60 * 60 * 1000; // 30 Days
+            const expiryDate = new Date().getTime() + 30 * 24 * 60 * 60 * 1000;
             localStorage.setItem('cartExpiry', expiryDate.toString());
         } catch (error) {
             console.error('Error saving cart to localStorage', error);
@@ -66,11 +65,11 @@ export function CartProvider({ children }: { children: ReactNode }) {
         });
     };
 
-    const removeFromCart = (id: number) => {
+    const removeFromCart = (id: string) => {
         setItems(prev => prev.filter(item => item.id !== id));
     };
 
-    const updateQuantity = (id: number, quantity: number) => {
+    const updateQuantity = (id: string, quantity: number) => {
         if (quantity < 1) {
             removeFromCart(id);
             return;

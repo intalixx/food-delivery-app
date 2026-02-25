@@ -1,46 +1,70 @@
-import { useState } from 'react';
-import { Search, SlidersHorizontal, IndianRupee, LogIn, UserPlus } from 'lucide-react'
+import { useState, useEffect } from 'react';
+import { Search, SlidersHorizontal, IndianRupee, LogIn, UserPlus, Loader2 } from 'lucide-react'
 import { useCart } from '@/hooks/useCart'
 import { toast } from 'sonner'
 import { useNavigate } from 'react-router-dom'
-
-// Dummy data for our food items with categories
-const foodItems = [
-    // Salads
-    { id: 1, name: 'Avocado salad', category: 'Salads', price: 120, image: 'https://images.unsplash.com/photo-1512621776951-a57141f2eefd?w=400', description: 'Fresh avocado, cherry tomatoes, and mixed greens with lemon dressing.' },
-    { id: 2, name: 'Fruits salad', category: 'Salads', price: 110, image: 'https://images.unsplash.com/photo-1490645935967-10de6ba17061?w=400', description: 'Seasonal mixed fruits tossed with a light honey syrup.' },
-    { id: 3, name: 'Green salad', category: 'Salads', price: 100, image: 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=400', description: 'Crisp lettuce, cucumber, and green bell peppers with olive oil.' },
-    { id: 4, name: 'Tomato bowl', category: 'Salads', price: 140, image: 'https://images.unsplash.com/photo-1540420773420-3366772f4999?w=400', description: 'Heritage tomatoes, basil, and mozzarella topped with balsamic glaze.' },
-
-    // Burgers
-    { id: 5, name: 'Classic Burger', category: 'Burgers', price: 150, image: 'https://images.unsplash.com/photo-1568901346375-23c9450c58cd?w=400', description: 'Juicy beef patty, lettuce, tomato, and our signature sauce.' },
-    { id: 6, name: 'Cheese Burger', category: 'Burgers', price: 160, image: 'https://images.unsplash.com/photo-1572802419224-296b0aeee0d9?w=400', description: 'Double cheddar cheese melted over a grilled beef patty.' },
-    { id: 7, name: 'Veggie Burger', category: 'Burgers', price: 140, image: 'https://images.unsplash.com/photo-1571091718767-18b5b1457add?w=400', description: 'Plant-based patty with fresh avocado and vegan mayo.' },
-    { id: 8, name: 'Chicken Burger', category: 'Burgers', price: 170, image: 'https://images.unsplash.com/photo-1550547660-d9450f859349?w=400', description: 'Crispy fried chicken breast, pickles, and spicy ranch.' },
-
-    // Pizzas
-    { id: 9, name: 'Pepperoni Pizza', category: 'Pizzas', price: 180, image: 'https://images.unsplash.com/photo-1628840042765-356cda07504e?w=400', description: 'Classic mozzarella topped with spicy pepperoni slices.' },
-    { id: 10, name: 'Margherita Pizza', category: 'Pizzas', price: 160, image: 'https://images.unsplash.com/photo-1574071318508-1cdbab80d002?w=400', description: 'Simple perfection with tomato sauce, fresh mozzarella, and basil.' },
-    { id: 11, name: 'BBQ Chicken Pizza', category: 'Pizzas', price: 200, image: 'https://images.unsplash.com/photo-1565299624946-b28f40a0ae38?w=400', description: 'Grilled chicken, red onions, and sweet BBQ sauce.' },
-    { id: 12, name: 'Veggie Pizza', category: 'Pizzas', price: 170, image: 'https://images.unsplash.com/photo-1513104890138-7c749659a591?w=400', description: 'Loaded with bell peppers, mushrooms, olives, and onions.' }
-];
-
-const categories = ['All', 'Salads', 'Burgers', 'Pizzas'];
+import { categoryService, type Category } from '@/services/categoryService'
+import { productService, getProductImageUrl, type Product } from '@/services/productService'
 
 export default function HomePage() {
     const { addToCart, items } = useCart();
     const navigate = useNavigate();
+
+    const [categories, setCategories] = useState<Category[]>([]);
+    const [products, setProducts] = useState<Product[]>([]);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState<string | null>(null);
+
     const [activeCategory, setActiveCategory] = useState('All');
     const [showSortMenu, setShowSortMenu] = useState(false);
     const [sortBy, setSortBy] = useState<'none' | 'asc' | 'desc'>('none');
+    const [searchQuery, setSearchQuery] = useState('');
 
-    let filteredItems = activeCategory === 'All' ? foodItems : foodItems.filter(item => item.category === activeCategory);
+    useEffect(() => {
+        async function fetchData() {
+            try {
+                setLoading(true);
+                setError(null);
+                const [categoriesData, productsData] = await Promise.all([
+                    categoryService.getAll(),
+                    productService.getAll(),
+                ]);
+                setCategories(categoriesData);
+                setProducts(productsData);
+            } catch (err) {
+                const message = err instanceof Error ? err.message : 'Failed to load data';
+                setError(message);
+                console.error('Error fetching data:', err);
+            } finally {
+                setLoading(false);
+            }
+        }
+        fetchData();
+    }, []);
 
-    if (sortBy === 'asc') {
-        filteredItems = [...filteredItems].sort((a, b) => a.price - b.price);
-    } else if (sortBy === 'desc') {
-        filteredItems = [...filteredItems].sort((a, b) => b.price - a.price);
+    // Filter by category
+    let filteredItems = activeCategory === 'All'
+        ? products
+        : products.filter(item => item.category_name === activeCategory);
+
+    // Filter by search query
+    if (searchQuery.trim()) {
+        const query = searchQuery.toLowerCase();
+        filteredItems = filteredItems.filter(item =>
+            item.product_name.toLowerCase().includes(query) ||
+            item.description?.toLowerCase().includes(query)
+        );
     }
+
+    // Sort by price
+    if (sortBy === 'asc') {
+        filteredItems = [...filteredItems].sort((a, b) => Number(a.price) - Number(b.price));
+    } else if (sortBy === 'desc') {
+        filteredItems = [...filteredItems].sort((a, b) => Number(b.price) - Number(a.price));
+    }
+
+    // Build category tabs from fetched categories
+    const categoryTabs = ['All', ...categories.map(c => c.category_name)];
 
     return (
         <div className="flex flex-col min-h-screen pb-20 bg-gray-50 dark:bg-gray-950 font-sans">
@@ -63,6 +87,8 @@ export default function HomePage() {
                     <input
                         type="text"
                         placeholder="Search your favourite food"
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
                         className="flex-1 bg-transparent border-none outline-none text-sm text-gray-700 dark:text-gray-300 placeholder-gray-400"
                     />
                     <div className="relative">
@@ -95,7 +121,7 @@ export default function HomePage() {
                 {/* Categories Section */}
                 <div className="py-6">
                     <div className="flex gap-3 overflow-x-auto scrollbar-hide">
-                        {categories.map(category => (
+                        {categoryTabs.map(category => (
                             <button
                                 key={category}
                                 onClick={() => setActiveCategory(category)}
@@ -110,66 +136,100 @@ export default function HomePage() {
                     </div>
                 </div>
 
-                {/* Rest of the content */}
-                <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 md:gap-4">
-                    {filteredItems.map((item) => (
-                        <div key={item.id} className="bg-white dark:bg-gray-900 rounded-2xl overflow-hidden shadow-[0_8px_30px_rgb(0,0,0,0.04)] dark:shadow-none border border-gray-100 dark:border-gray-800 relative flex flex-col hover:shadow-[0_8px_30px_rgb(0,0,0,0.08)] transition-all duration-300 cursor-pointer group">
+                {/* Loading State */}
+                {loading && (
+                    <div className="flex flex-col items-center justify-center py-20 gap-3">
+                        <Loader2 className="w-8 h-8 text-primary animate-spin" />
+                        <p className="text-sm text-gray-500 dark:text-gray-400 font-medium">Loading delicious food...</p>
+                    </div>
+                )}
 
-                            <div className="relative w-full">
-                                <div className="w-full h-40 md:h-56 overflow-hidden bg-gray-100 dark:bg-gray-800">
-                                    <img
-                                        src={item.image}
-                                        alt={item.name}
-                                        className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500 ease-in-out"
-                                    />
+                {/* Error State */}
+                {error && !loading && (
+                    <div className="flex flex-col items-center justify-center py-20 gap-3">
+                        <p className="text-sm text-red-500 font-medium">{error}</p>
+                        <button
+                            onClick={() => window.location.reload()}
+                            className="px-4 py-2 bg-primary text-white text-sm font-semibold rounded-full cursor-pointer hover:bg-primary/90 transition-colors"
+                        >
+                            Try Again
+                        </button>
+                    </div>
+                )}
+
+                {/* Empty State */}
+                {!loading && !error && filteredItems.length === 0 && (
+                    <div className="flex flex-col items-center justify-center py-20 gap-2">
+                        <p className="text-lg font-semibold text-gray-700 dark:text-gray-300">No items found</p>
+                        <p className="text-sm text-gray-500 dark:text-gray-400">Try adjusting your search or category filter.</p>
+                    </div>
+                )}
+
+                {/* Product Grid */}
+                {!loading && !error && filteredItems.length > 0 && (
+                    <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 md:gap-4">
+                        {filteredItems.map((item) => {
+                            const imageUrl = getProductImageUrl(item.image_path);
+                            return (
+                                <div key={item.id} className="bg-white dark:bg-gray-900 rounded-2xl overflow-hidden shadow-[0_8px_30px_rgb(0,0,0,0.04)] dark:shadow-none border border-gray-100 dark:border-gray-800 relative flex flex-col hover:shadow-[0_8px_30px_rgb(0,0,0,0.08)] transition-all duration-300 cursor-pointer group">
+
+                                    <div className="relative w-full">
+                                        <div className="w-full h-40 md:h-56 overflow-hidden bg-gray-100 dark:bg-gray-800">
+                                            <img
+                                                src={imageUrl}
+                                                alt={item.product_name}
+                                                className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500 ease-in-out"
+                                            />
+                                        </div>
+                                    </div>
+
+                                    <div className="w-full p-4 flex flex-col">
+                                        <h3 className="font-bold text-[16px] text-gray-900 dark:text-white truncate">{item.product_name}</h3>
+                                        <p
+                                            className="text-[13px] text-gray-500 dark:text-gray-400 line-clamp-2"
+                                            title={item.description || ''}
+                                        >
+                                            {item.description}
+                                        </p>
+
+                                        {/* Bottom Row - Price */}
+                                        <div className="w-full mt-4 flex justify-between items-center">
+                                            <span className="font-bold text-lg text-primary flex items-center">
+                                                <IndianRupee className="w-3.75 h-3.75 mr-px stroke-[2.5]" />
+                                                {Number(item.price)}
+                                            </span>
+                                            <button
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    const isAlreadyInCart = items.some(cartItem => cartItem.id === item.id);
+
+                                                    if (isAlreadyInCart) {
+                                                        toast.info('Product is already in cart', {
+                                                            action: { label: 'Go to Cart', onClick: () => navigate('/cart') }
+                                                        });
+                                                    } else {
+                                                        addToCart({
+                                                            id: item.id,
+                                                            name: item.product_name,
+                                                            price: Number(item.price),
+                                                            image: imageUrl
+                                                        });
+                                                        toast.success('Product added to cart', {
+                                                            action: { label: 'Go to Cart', onClick: () => navigate('/cart') }
+                                                        });
+                                                    }
+                                                }}
+                                                className="px-3 py-1 bg-white dark:bg-gray-900 text-primary border border-primary font-bold text-[11px] rounded-md cursor-pointer"
+                                            >
+                                                ADD
+                                            </button>
+                                        </div>
+                                    </div>
                                 </div>
-                            </div>
-
-                            <div className="w-full p-4 flex flex-col">
-                                <h3 className="font-bold text-[16px] text-gray-900 dark:text-white truncate">{item.name}</h3>
-                                <p
-                                    className="text-[13px] text-gray-500 dark:text-gray-400 line-clamp-2"
-                                    title={item.description}
-                                >
-                                    {item.description}
-                                </p>
-
-                                {/* Bottom Row - Price */}
-                                <div className="w-full mt-4 flex justify-between items-center">
-                                    <span className="font-bold text-lg text-primary flex items-center">
-                                        <IndianRupee className="w-3.75 h-3.75 mr-px stroke-[2.5]" />
-                                        {item.price}
-                                    </span>
-                                    <button
-                                        onClick={(e) => {
-                                            e.stopPropagation();
-                                            const isAlreadyInCart = items.some(cartItem => cartItem.id === item.id);
-
-                                            if (isAlreadyInCart) {
-                                                toast.info('Product is already in cart', {
-                                                    action: { label: 'Go to Cart', onClick: () => navigate('/cart') }
-                                                });
-                                            } else {
-                                                addToCart({
-                                                    id: item.id,
-                                                    name: item.name,
-                                                    price: item.price,
-                                                    image: item.image
-                                                });
-                                                toast.success('Product added to cart', {
-                                                    action: { label: 'Go to Cart', onClick: () => navigate('/cart') }
-                                                });
-                                            }
-                                        }}
-                                        className="px-3 py-1 bg-white dark:bg-gray-900 text-primary border border-primary font-bold text-[11px] rounded-md cursor-pointer"
-                                    >
-                                        ADD
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
-                    ))}
-                </div>
+                            );
+                        })}
+                    </div>
+                )}
             </div>
         </div>
     )
