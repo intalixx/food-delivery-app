@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Search, SlidersHorizontal, IndianRupee } from 'lucide-react'
+import { Search, SlidersHorizontal, IndianRupee, LogIn, UserPlus } from 'lucide-react'
 import { useCart } from '@/hooks/useCart'
 import { toast } from 'sonner'
 import { useNavigate } from 'react-router-dom'
@@ -46,9 +46,15 @@ export default function HomePage() {
         <div className="flex flex-col min-h-screen pb-20 bg-gray-50 dark:bg-gray-950 font-sans">
             <div className="p-4 max-w-7xl mx-auto w-full">
                 {/* Header Section */}
-                <div>
-                    <h1 className="text-4xl font-bold text-primary tracking-tight">Intalix.</h1>
-                    <p className="text-sm text-gray-500 dark:text-gray-400 font-medium mt-1">Find The Best Food Around You !</p>
+                <div className="flex items-center justify-between">
+                    <div>
+                        <h1 className="text-4xl font-bold text-primary tracking-tight">Intalix.</h1>
+                        <p className="text-sm text-gray-500 dark:text-gray-400 font-medium mt-1">Find The Best Food Around You !</p>
+                    </div>
+                    <div className="flex items-center gap-2">
+                        <button className="px-4 py-2 rounded-full border border-primary text-[13px] font-semibold text-primary hover:bg-primary/5 transition-colors cursor-pointer flex items-center justify-center gap-1.5 leading-none"><LogIn className="w-3.5 h-3.5" />Login</button>
+                        <button className="px-4 py-2 rounded-full bg-primary text-white text-[13px] font-semibold hover:bg-primary/90 transition-colors cursor-pointer flex items-center justify-center gap-1.5 leading-none"><UserPlus className="w-3.5 h-3.5" />Sign Up</button>
+                    </div>
                 </div>
 
                 {/* Search Bar */}
