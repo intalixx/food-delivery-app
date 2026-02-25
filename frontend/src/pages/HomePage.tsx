@@ -5,6 +5,7 @@ import { toast } from 'sonner'
 import { useNavigate } from 'react-router-dom'
 import { categoryService, type Category } from '@/services/categoryService'
 import { productService, getProductImageUrl, type Product } from '@/services/productService'
+import AuthModal from '@/components/shared/AuthModal'
 
 export default function HomePage() {
     const { addToCart, items } = useCart();
@@ -19,6 +20,10 @@ export default function HomePage() {
     const [showSortMenu, setShowSortMenu] = useState(false);
     const [sortBy, setSortBy] = useState<'none' | 'asc' | 'desc'>('none');
     const [searchQuery, setSearchQuery] = useState('');
+
+    // Auth modal
+    const [authOpen, setAuthOpen] = useState(false);
+    const [authMode, setAuthMode] = useState<'login' | 'signup'>('login');
 
     useEffect(() => {
         async function fetchData() {
@@ -76,8 +81,8 @@ export default function HomePage() {
                         <p className="text-sm text-gray-500 dark:text-gray-400 font-medium mt-1">Find The Best Food Around You !</p>
                     </div>
                     <div className="flex items-center gap-2">
-                        <button className="p-2 md:px-4 md:py-2 rounded-full border border-primary text-[13px] font-semibold text-primary hover:bg-primary/5 transition-colors cursor-pointer flex items-center justify-center gap-1.5 leading-none"><LogIn className="w-4 h-4" /><span className="hidden md:inline">Login</span></button>
-                        <button className="p-2 md:px-4 md:py-2 rounded-full bg-primary text-white text-[13px] font-semibold hover:bg-primary/90 transition-colors cursor-pointer flex items-center justify-center gap-1.5 leading-none"><UserPlus className="w-4 h-4" /><span className="hidden md:inline">Sign Up</span></button>
+                        <button onClick={() => { setAuthMode('login'); setAuthOpen(true); }} className="p-2 md:px-4 md:py-2 rounded-full border border-primary text-[13px] font-semibold text-primary hover:bg-primary/5 transition-colors cursor-pointer flex items-center justify-center gap-1.5 leading-none"><LogIn className="w-4 h-4" /><span className="hidden md:inline">Login</span></button>
+                        <button onClick={() => { setAuthMode('signup'); setAuthOpen(true); }} className="p-2 md:px-4 md:py-2 rounded-full bg-primary text-white text-[13px] font-semibold hover:bg-primary/90 transition-colors cursor-pointer flex items-center justify-center gap-1.5 leading-none"><UserPlus className="w-4 h-4" /><span className="hidden md:inline">Sign Up</span></button>
                     </div>
                 </div>
 
@@ -231,6 +236,9 @@ export default function HomePage() {
                     </div>
                 )}
             </div>
+
+            {/* Auth Modal */}
+            <AuthModal open={authOpen} onOpenChange={setAuthOpen} mode={authMode} />
         </div>
     )
 }

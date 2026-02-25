@@ -123,8 +123,19 @@
     @apply border-border outline-ring/50;
   }
 
+  html {
+    overflow-y: scroll !important;
+  }
+
   body {
-    @apply bg-background text-foreground overflow-y-scroll;
+    @apply bg-background text-foreground;
+  }
+
+  /* Prevent Radix Dialog from shifting the layout when open */
+  body[data-scroll-locked] {
+    padding-right: 0 !important;
+    margin-right: 0 !important;
+    overflow: auto !important;
   }
 }
 
