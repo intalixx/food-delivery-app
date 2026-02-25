@@ -46,9 +46,10 @@ export default function HomePage() {
         <div className="flex flex-col min-h-screen pb-20 bg-gray-50 dark:bg-gray-950 font-sans">
             <div className="p-4 max-w-7xl mx-auto w-full">
                 {/* Header Section */}
-                <h1 className="text-4xl font-light text-gray-900 dark:text-gray-100 leading-tight">
-                    Find The <span className="font-bold">Best<br />Food</span> Around You
-                </h1>
+                <div>
+                    <h1 className="text-4xl font-bold text-primary tracking-tight">Intalix.</h1>
+                    <p className="text-sm text-gray-500 dark:text-gray-400 font-medium mt-1">Find The Best Food Around You !</p>
+                </div>
 
                 {/* Search Bar */}
                 <div className="mt-6 flex items-center bg-white dark:bg-gray-900 rounded-full px-5 py-3 border border-gray-200 dark:border-gray-700 transition-colors focus-within:border-primary/50 dark:focus-within:border-primary/50">
