@@ -243,11 +243,11 @@ export default function SavedAddressPage() {
                 {addresses.length === 0 ? (
                     <motion.div layout className="text-center text-gray-500 py-10 font-medium">No saved addresses yet.</motion.div>
                 ) : (
-                    <motion.div layout className="flex flex-col gap-4">
-                        <AnimatePresence mode="popLayout">
+                    <div className="flex flex-col gap-4">
+                        <AnimatePresence>
                             {addresses.map(addr => (
                                 <motion.div
-                                    layout
+
                                     key={addr.id}
                                     initial={{ opacity: 0, scale: 0.95 }}
                                     animate={{ opacity: 1, scale: 1 }}
@@ -303,7 +303,7 @@ export default function SavedAddressPage() {
                                 </motion.div>
                             ))}
                         </AnimatePresence>
-                    </motion.div>
+                    </div>
                 )}
             </div>
         </div>
