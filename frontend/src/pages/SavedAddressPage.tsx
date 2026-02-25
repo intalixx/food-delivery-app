@@ -1,53 +1,56 @@
-import { useState, useEffect } from 'react';
-import { ChevronLeft, Plus, Home, Briefcase, MapPin, Trash2, MoreHorizontal, Edit2 } from 'lucide-react';
+import { useState, useEffect, useCallback } from 'react';
+import { ChevronLeft, Plus, Home, Briefcase, MapPin, Trash2, MoreHorizontal, Edit2, Loader2 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from 'sonner';
+import { useAuth } from '@/context/AuthContext';
+import { addressService, type Address, type CreateAddressData, type UpdateAddressData } from '@/services/addressService';
 
-type AddressInfo = {
-    id: string;
-    type: 'Home' | 'Work' | 'Other';
-    location: string;
+type SaveAsPreset = 'Home' | 'Work' | 'Other';
+
+type FormData = {
+    save_as: string;
     pincode: string;
     city: string;
     state: string;
-    houseNumber: string;
-    streetLocality: string;
+    house_number: string;
+    street_locality: string;
     mobile: string;
 };
 
-const initialAddresses: AddressInfo[] = [
-    {
-        id: '1',
-        type: 'Home',
-        location: 'Home',
-        pincode: '110016',
-        city: 'New Delhi',
-        state: 'Delhi',
-        houseNumber: '123, Green Park',
-        streetLocality: 'South Delhi',
-        mobile: '+91 9876543210'
-    },
-    {
-        id: '2',
-        type: 'Work',
-        location: 'Office',
-        pincode: '560001',
-        city: 'Bengaluru',
-        state: 'Karnataka',
-        houseNumber: 'WeWork Galaxy',
-        streetLocality: 'Residency Road, Shanthala Nagar',
-        mobile: '+91 9876543211'
-    }
-];
+const emptyForm: FormData = { save_as: 'Home', pincode: '', city: '', state: '', house_number: '', street_locality: '', mobile: '' };
 
 export default function SavedAddressPage() {
     const navigate = useNavigate();
-    const [addresses, setAddresses] = useState<AddressInfo[]>(initialAddresses);
+    const { user } = useAuth();
+
+    const [addresses, setAddresses] = useState<Address[]>([]);
+    const [isLoading, setIsLoading] = useState(true);
+    const [isSaving, setIsSaving] = useState(false);
     const [isAdding, setIsAdding] = useState(false);
-    const [newAddress, setNewAddress] = useState<Omit<AddressInfo, 'id'>>({ type: 'Home', location: '', pincode: '', city: '', state: '', houseNumber: '', streetLocality: '', mobile: '' });
+    const [newAddress, setNewAddress] = useState<FormData>({ ...emptyForm });
+    const [selectedType, setSelectedType] = useState<SaveAsPreset>('Home');
     const [editingId, setEditingId] = useState<string | null>(null);
     const [openDropdownId, setOpenDropdownId] = useState<string | null>(null);
+
+    const fetchAddresses = useCallback(async () => {
+        if (!user?.id) return;
+        try {
+            setIsLoading(true);
+            const data = await addressService.getByUserId(user.id);
+            setAddresses(data);
+        } catch (error) {
+            console.error('Failed to fetch addresses', error);
+            toast.error('Failed to load addresses');
+        } finally {
+            setIsLoading(false);
+        }
+    }, [user?.id]);
+
+    // Fetch addresses on mount
+    useEffect(() => {
+        if (user?.id) fetchAddresses();
+    }, [user?.id, fetchAddresses]);
 
     useEffect(() => {
         const handleClickOutside = () => setOpenDropdownId(null);
@@ -55,36 +58,69 @@ export default function SavedAddressPage() {
         return () => document.removeEventListener('click', handleClickOutside);
     }, []);
 
-    const handleAddAddress = () => {
-        if (!newAddress.location || !newAddress.houseNumber || !newAddress.streetLocality || !newAddress.pincode || !newAddress.city || !newAddress.state || !newAddress.mobile) {
+    const handleAddAddress = async () => {
+        if (!newAddress.house_number || !newAddress.street_locality || !newAddress.pincode || !newAddress.city || !newAddress.state || !newAddress.mobile) {
             toast.error("Please fill in all the details");
             return;
         }
-        if (editingId) {
-            setAddresses(addresses.map(a => a.id === editingId ? { ...newAddress, id: editingId } : a));
-            toast.success("Address updated successfully");
-        } else {
-            setAddresses([...addresses, { ...newAddress, id: Date.now().toString() }]);
-            toast.success("Address saved successfully");
+        if (!user?.id) {
+            toast.error("Please login first");
+            return;
         }
-        setIsAdding(false);
-        setEditingId(null);
-        setNewAddress({ type: 'Home', location: '', pincode: '', city: '', state: '', houseNumber: '', streetLocality: '', mobile: '' });
+
+        setIsSaving(true);
+        try {
+            if (editingId) {
+                const updateData: UpdateAddressData = {
+                    save_as: newAddress.save_as,
+                    pincode: newAddress.pincode,
+                    city: newAddress.city,
+                    state: newAddress.state,
+                    house_number: newAddress.house_number,
+                    street_locality: newAddress.street_locality,
+                    mobile: newAddress.mobile,
+                };
+                const updated = await addressService.update(editingId, updateData);
+                setAddresses(addresses.map(a => a.id === editingId ? updated : a));
+                toast.success("Address updated successfully");
+            } else {
+                const createData: CreateAddressData = {
+                    user_id: user.id,
+                    save_as: newAddress.save_as,
+                    pincode: newAddress.pincode,
+                    city: newAddress.city,
+                    state: newAddress.state,
+                    house_number: newAddress.house_number,
+                    street_locality: newAddress.street_locality,
+                    mobile: newAddress.mobile,
+                };
+                const created = await addressService.create(createData);
+                setAddresses([created, ...addresses]);
+                toast.success("Address saved successfully");
+            }
+            resetForm();
+        } catch (error) {
+            console.error('Save error:', error);
+            toast.error(error instanceof Error ? error.message : 'Failed to save address');
+        } finally {
+            setIsSaving(false);
+        }
     };
 
     const handleEdit = (id: string, e: React.MouseEvent) => {
         e.stopPropagation();
-        const addrToEdit = addresses.find(a => a.id === id);
-        if (addrToEdit) {
+        const addr = addresses.find(a => a.id === id);
+        if (addr) {
+            const preset = (['Home', 'Work'] as SaveAsPreset[]).includes(addr.save_as as SaveAsPreset) ? addr.save_as as SaveAsPreset : 'Other';
+            setSelectedType(preset);
             setNewAddress({
-                type: addrToEdit.type,
-                location: addrToEdit.location,
-                pincode: addrToEdit.pincode,
-                city: addrToEdit.city,
-                state: addrToEdit.state,
-                houseNumber: addrToEdit.houseNumber,
-                streetLocality: addrToEdit.streetLocality,
-                mobile: addrToEdit.mobile
+                save_as: addr.save_as,
+                pincode: addr.pincode,
+                city: addr.city,
+                state: addr.state,
+                house_number: addr.house_number,
+                street_locality: addr.street_locality,
+                mobile: addr.mobile,
             });
             setEditingId(id);
             setIsAdding(true);
@@ -93,11 +129,24 @@ export default function SavedAddressPage() {
         }
     };
 
-    const handleDelete = (id: string, e: React.MouseEvent) => {
+    const handleDelete = async (id: string, e: React.MouseEvent) => {
         e.stopPropagation();
-        setAddresses(addresses.filter(a => a.id !== id));
         setOpenDropdownId(null);
-        toast.info("Address deleted permanently");
+        try {
+            await addressService.delete(id);
+            setAddresses(addresses.filter(a => a.id !== id));
+            toast.info("Address deleted permanently");
+        } catch (error) {
+            console.error('Delete error:', error);
+            toast.error('Failed to delete address');
+        }
+    };
+
+    const resetForm = () => {
+        setIsAdding(false);
+        setEditingId(null);
+        setSelectedType('Home');
+        setNewAddress({ ...emptyForm });
     };
 
     const getIcon = (type: string) => {
@@ -122,7 +171,7 @@ export default function SavedAddressPage() {
             {/* Main Content Container */}
             <div className="flex flex-col w-full max-w-xl mx-auto px-4 md:px-0 pt-6 pb-16 gap-4">
 
-                {/* Add New Address Button */}
+                {/* Add New Address Button / Form */}
                 <AnimatePresence mode="popLayout">
                     {!isAdding ? (
                         <motion.button
@@ -154,7 +203,9 @@ export default function SavedAddressPage() {
                                         type="text"
                                         placeholder="Pincode"
                                         value={newAddress.pincode}
-                                        onChange={(e) => setNewAddress(prev => ({ ...prev, pincode: e.target.value }))}
+                                        maxLength={6}
+                                        inputMode="numeric"
+                                        onChange={(e) => setNewAddress(prev => ({ ...prev, pincode: e.target.value.replace(/\D/g, '').slice(0, 6) }))}
                                         className="w-1/3 px-4 py-3 rounded-2xl bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-[14px] text-gray-900 dark:text-white outline-none focus:border-primary/50"
                                     />
                                     <input
@@ -175,20 +226,20 @@ export default function SavedAddressPage() {
                                 <input
                                     type="text"
                                     placeholder="House No., Building Name"
-                                    value={newAddress.houseNumber}
-                                    onChange={(e) => setNewAddress(prev => ({ ...prev, houseNumber: e.target.value }))}
+                                    value={newAddress.house_number}
+                                    onChange={(e) => setNewAddress(prev => ({ ...prev, house_number: e.target.value }))}
                                     className="w-full px-4 py-3 rounded-2xl bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-[14px] text-gray-900 dark:text-white outline-none focus:border-primary/50"
                                 />
                                 <textarea
                                     placeholder="Street Locality / Area"
                                     rows={2}
-                                    value={newAddress.streetLocality}
-                                    onChange={(e) => setNewAddress(prev => ({ ...prev, streetLocality: e.target.value }))}
+                                    value={newAddress.street_locality}
+                                    onChange={(e) => setNewAddress(prev => ({ ...prev, street_locality: e.target.value }))}
                                     className="w-full px-4 py-3 rounded-2xl bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-[14px] text-gray-900 dark:text-white outline-none focus:border-primary/50 resize-none"
                                 />
                                 <input
                                     type="text"
-                                    placeholder="Mobile Number"
+                                    placeholder="Customer Mobile Number"
                                     value={newAddress.mobile}
                                     onChange={(e) => setNewAddress(prev => ({ ...prev, mobile: e.target.value }))}
                                     className="w-full px-4 py-3 rounded-2xl bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-[14px] text-gray-900 dark:text-white outline-none focus:border-primary/50"
@@ -196,18 +247,21 @@ export default function SavedAddressPage() {
 
                                 <div className="mt-2 text-[13px] font-bold text-gray-500">Save as</div>
                                 <div className="flex gap-2">
-                                    {['Home', 'Work', 'Other'].map(type => (
+                                    {(['Home', 'Work', 'Other'] as const).map(type => (
                                         <button
                                             key={type}
-                                            onClick={() => setNewAddress(prev => ({ ...prev, type: type as AddressInfo['type'], location: type === 'Other' ? '' : type }))}
-                                            className={`cursor-pointer flex-1 py-1.5 rounded-full text-[13px] font-bold border transition-colors ${newAddress.type === type ? 'border-primary bg-primary/10 text-primary' : 'border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-400'}`}
+                                            onClick={() => {
+                                                setSelectedType(type);
+                                                setNewAddress(prev => ({ ...prev, save_as: type === 'Other' ? '' : type }));
+                                            }}
+                                            className={`cursor-pointer flex-1 py-1.5 rounded-full text-[13px] font-bold border transition-colors ${selectedType === type ? 'border-primary bg-primary/10 text-primary' : 'border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-400'}`}
                                         >
                                             {type}
                                         </button>
                                     ))}
                                 </div>
                                 <AnimatePresence>
-                                    {newAddress.type === 'Other' && (
+                                    {selectedType === 'Other' && (
                                         <motion.div
                                             initial={{ height: 0, opacity: 0 }}
                                             animate={{ height: 'auto', opacity: 1 }}
@@ -219,8 +273,8 @@ export default function SavedAddressPage() {
                                                 <input
                                                     type="text"
                                                     placeholder="Location Name (e.g. My Flat, Amit's House)"
-                                                    value={newAddress.location}
-                                                    onChange={(e) => setNewAddress(prev => ({ ...prev, location: e.target.value }))}
+                                                    value={newAddress.save_as}
+                                                    onChange={(e) => setNewAddress(prev => ({ ...prev, save_as: e.target.value }))}
                                                     className="w-full px-4 py-3 rounded-2xl bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-[14px] text-gray-900 dark:text-white outline-none focus:border-primary/50"
                                                 />
                                             </div>
@@ -229,8 +283,14 @@ export default function SavedAddressPage() {
                                 </AnimatePresence>
 
                                 <motion.div layout className="flex gap-3 mt-2">
-                                    <button onClick={() => { setIsAdding(false); setEditingId(null); setNewAddress({ type: 'Home', location: '', pincode: '', city: '', state: '', houseNumber: '', streetLocality: '', mobile: '' }); }} className="flex-1 py-3 bg-gray-100 dark:bg-gray-800 text-gray-900 dark:text-white rounded-2xl font-semibold text-[14px] cursor-pointer">Cancel</button>
-                                    <button onClick={handleAddAddress} className="flex-1 py-3 bg-primary text-white rounded-2xl font-semibold text-[14px] cursor-pointer">{editingId ? 'Update Address' : 'Save Address'}</button>
+                                    <button onClick={resetForm} className="flex-1 py-3 bg-gray-100 dark:bg-gray-800 text-gray-900 dark:text-white rounded-2xl font-semibold text-[14px] cursor-pointer">Cancel</button>
+                                    <button
+                                        onClick={handleAddAddress}
+                                        disabled={isSaving}
+                                        className="flex-1 py-3 bg-primary text-white rounded-2xl font-semibold text-[14px] cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed flex items-center justify-center"
+                                    >
+                                        {isSaving ? <Loader2 className="w-5 h-5 animate-spin" /> : editingId ? 'Update Address' : 'Save Address'}
+                                    </button>
                                 </motion.div>
                             </div>
                         </motion.div>
@@ -239,15 +299,18 @@ export default function SavedAddressPage() {
 
                 <motion.div layout className="text-[15px] font-bold text-gray-800 dark:text-gray-200 mt-2 mb-1 px-1">Saved Addresses</motion.div>
 
-                {/* Addresses List */}
-                {addresses.length === 0 ? (
+                {/* Loading State */}
+                {isLoading ? (
+                    <div className="flex justify-center py-10">
+                        <Loader2 className="w-7 h-7 animate-spin text-primary" />
+                    </div>
+                ) : addresses.length === 0 ? (
                     <motion.div layout className="text-center text-gray-500 py-10 font-medium">No saved addresses yet.</motion.div>
                 ) : (
                     <div className="flex flex-col gap-4">
                         <AnimatePresence>
                             {addresses.map(addr => (
                                 <motion.div
-
                                     key={addr.id}
                                     initial={{ opacity: 0, scale: 0.95 }}
                                     animate={{ opacity: 1, scale: 1 }}
@@ -255,11 +318,11 @@ export default function SavedAddressPage() {
                                     className="flex items-center bg-white dark:bg-gray-900 rounded-4xl p-5 border border-gray-200 dark:border-gray-700 transition-all"
                                 >
                                     <div className="flex items-center justify-center w-10 h-10 rounded-full bg-primary/10 text-primary mr-4 shrink-0 transition-colors">
-                                        {getIcon(addr.type)}
+                                        {getIcon(addr.save_as)}
                                     </div>
                                     <div className="flex flex-col flex-1 pr-2 justify-center">
-                                        <h3 className="font-bold text-[16px] text-gray-900 dark:text-white capitalize mb-0.5 leading-tight">{addr.location || addr.type}</h3>
-                                        <p className="text-[13px] text-gray-500 dark:text-gray-400 font-medium leading-tight">{addr.houseNumber}, {addr.streetLocality}</p>
+                                        <h3 className="font-bold text-[16px] text-gray-900 dark:text-white capitalize mb-0.5 leading-tight">{addr.save_as}</h3>
+                                        <p className="text-[13px] text-gray-500 dark:text-gray-400 font-medium leading-tight">{addr.house_number}, {addr.street_locality}</p>
                                         <p className="text-[13px] text-gray-500 dark:text-gray-400 font-medium leading-tight mb-0.5">{addr.city}, {addr.state} - {addr.pincode}</p>
                                         {addr.mobile && (
                                             <p className="text-[13px] text-gray-600 dark:text-gray-400 font-medium mt-0.5 leading-tight">
