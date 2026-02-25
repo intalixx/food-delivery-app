@@ -21,8 +21,7 @@ curl http://localhost:8000/api/addresses
     {
       "id": "uuid-here",
       "user_id": "user-uuid-here",
-      "address_type": "Home",
-      "location": "Home",
+      "save_as": "Home",
       "pincode": "110016",
       "city": "New Delhi",
       "state": "Delhi",
@@ -95,8 +94,7 @@ curl http://localhost:8000/api/addresses/user/<user-uuid>
 ```json
 {
   "user_id": "user-uuid-here",
-  "address_type": "Home",
-  "location": "Home",
+  "save_as": "Home",
   "pincode": "110016",
   "city": "New Delhi",
   "state": "Delhi",
@@ -113,8 +111,7 @@ curl -X POST http://localhost:8000/api/addresses \
   -H "Content-Type: application/json" \
   -d '{
     "user_id": "user-uuid-here",
-    "address_type": "Home",
-    "location": "Home",
+    "save_as": "Home",
     "pincode": "110016",
     "city": "New Delhi",
     "state": "Delhi",
@@ -129,8 +126,7 @@ curl -X POST http://localhost:8000/api/addresses \
 | Field             | Type   | Required | Rules                               |
 | ----------------- | ------ | -------- | ----------------------------------- |
 | `user_id`         | string | Yes      | Must be valid UUID of existing user |
-| `address_type`    | string | Yes      | Must be `Home`, `Work`, or `Other`  |
-| `location`        | string | No       | Max 100 chars                       |
+| `save_as`         | string | Yes      | Must be `Home`, `Work`, or `Other`  |
 | `pincode`         | string | Yes      | 4-10 digits only                    |
 | `city`            | string | Yes      | Max 50 chars                        |
 | `state`           | string | Yes      | Max 50 chars                        |
@@ -158,7 +154,7 @@ curl -X POST http://localhost:8000/api/addresses \
   "errors": [
     "pincode must be 4-10 digits",
     "city is required and must be a string",
-    "address_type must be one of: Home, Work, Other"
+    "save_as must be one of: Home, Work, Other"
   ]
 }
 ```
@@ -193,8 +189,7 @@ curl -X PUT http://localhost:8000/api/addresses/<uuid> \
 
 | Field             | Type   | Required | Rules                              |
 | ----------------- | ------ | -------- | ---------------------------------- |
-| `address_type`    | string | No       | Must be `Home`, `Work`, or `Other` |
-| `location`        | string | No       | Max 100 chars                      |
+| `save_as`         | string | No       | Must be `Home`, `Work`, or `Other` |
 | `pincode`         | string | No       | 4-10 digits only                   |
 | `city`            | string | No       | Max 50 chars                       |
 | `state`           | string | No       | Max 50 chars                       |
