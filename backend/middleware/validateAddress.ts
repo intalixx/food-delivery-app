@@ -1,0 +1,252 @@
+import { Request, Response, NextFunction } from 'express';
+
+const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+const VALID_ADDRESS_TYPES = ['Home', 'Work', 'Other'];
+const PINCODE_REGEX = /^[0-9]{4,10}$/;
+const MOBILE_REGEX = /^\+?[0-9\s\-]{7,15}$/;
+
+export function validateCreateAddress(req: Request, res: Response, next: NextFunction): void {
+    const { user_id, address_type, location, pincode, city, state, house_number, street_locality, mobile } = req.body;
+    const errors: string[] = [];
+
+    // user_id — required
+    if (!user_id || typeof user_id !== 'string') {
+        errors.push('user_id is required and must be a string');
+    } else if (!UUID_REGEX.test(user_id)) {
+        errors.push('user_id must be a valid UUID');
+    }
+
+    // address_type — required, enum
+    if (!address_type || typeof address_type !== 'string') {
+        errors.push('address_type is required and must be a string');
+    } else if (!VALID_ADDRESS_TYPES.includes(address_type)) {
+        errors.push('address_type must be one of: Home, Work, Other');
+    }
+
+    // location — optional
+    if (location !== undefined && location !== null && location !== '') {
+        if (typeof location !== 'string') {
+            errors.push('location must be a string');
+        } else if (location.trim().length > 100) {
+            errors.push('location must be at most 100 characters');
+        }
+    }
+
+    // pincode — required
+    if (!pincode || typeof pincode !== 'string') {
+        errors.push('pincode is required and must be a string');
+    } else {
+        const trimmed = pincode.trim();
+        if (trimmed.length === 0) {
+            errors.push('pincode cannot be empty');
+        } else if (!PINCODE_REGEX.test(trimmed)) {
+            errors.push('pincode must be 4-10 digits');
+        }
+    }
+
+    // city — required
+    if (!city || typeof city !== 'string') {
+        errors.push('city is required and must be a string');
+    } else {
+        const trimmed = city.trim();
+        if (trimmed.length === 0) {
+            errors.push('city cannot be empty');
+        } else if (trimmed.length > 50) {
+            errors.push('city must be at most 50 characters');
+        }
+    }
+
+    // state — required
+    if (!state || typeof state !== 'string') {
+        errors.push('state is required and must be a string');
+    } else {
+        const trimmed = state.trim();
+        if (trimmed.length === 0) {
+            errors.push('state cannot be empty');
+        } else if (trimmed.length > 50) {
+            errors.push('state must be at most 50 characters');
+        }
+    }
+
+    // house_number — required
+    if (!house_number || typeof house_number !== 'string') {
+        errors.push('house_number is required and must be a string');
+    } else {
+        const trimmed = house_number.trim();
+        if (trimmed.length === 0) {
+            errors.push('house_number cannot be empty');
+        } else if (trimmed.length > 100) {
+            errors.push('house_number must be at most 100 characters');
+        }
+    }
+
+    // street_locality — required
+    if (!street_locality || typeof street_locality !== 'string') {
+        errors.push('street_locality is required and must be a string');
+    } else {
+        const trimmed = street_locality.trim();
+        if (trimmed.length === 0) {
+            errors.push('street_locality cannot be empty');
+        } else if (trimmed.length > 150) {
+            errors.push('street_locality must be at most 150 characters');
+        }
+    }
+
+    // mobile — required
+    if (!mobile || typeof mobile !== 'string') {
+        errors.push('mobile is required and must be a string');
+    } else {
+        const trimmed = mobile.trim();
+        if (trimmed.length === 0) {
+            errors.push('mobile cannot be empty');
+        } else if (!MOBILE_REGEX.test(trimmed)) {
+            errors.push('mobile must be a valid phone number');
+        }
+    }
+
+    if (errors.length > 0) {
+        res.status(400).json({ success: false, errors });
+        return;
+    }
+
+    // Sanitize
+    req.body.pincode = pincode.trim();
+    req.body.city = city.trim();
+    req.body.state = state.trim();
+    req.body.house_number = house_number.trim();
+    req.body.street_locality = street_locality.trim();
+    req.body.mobile = mobile.trim();
+    if (location) req.body.location = location.trim();
+
+    next();
+}
+
+export function validateUpdateAddress(req: Request, res: Response, next: NextFunction): void {
+    const { address_type, location, pincode, city, state, house_number, street_locality, mobile } = req.body;
+    const errors: string[] = [];
+
+    // At least one field must be provided
+    if (address_type === undefined && location === undefined && pincode === undefined &&
+        city === undefined && state === undefined && house_number === undefined &&
+        street_locality === undefined && mobile === undefined) {
+        errors.push('At least one field must be provided for update');
+    }
+
+    // address_type — optional, enum
+    if (address_type !== undefined) {
+        if (typeof address_type !== 'string') {
+            errors.push('address_type must be a string');
+        } else if (!VALID_ADDRESS_TYPES.includes(address_type)) {
+            errors.push('address_type must be one of: Home, Work, Other');
+        }
+    }
+
+    // location — optional
+    if (location !== undefined && location !== null && location !== '') {
+        if (typeof location !== 'string') {
+            errors.push('location must be a string');
+        } else if (location.trim().length > 100) {
+            errors.push('location must be at most 100 characters');
+        }
+    }
+
+    // pincode — optional
+    if (pincode !== undefined) {
+        if (typeof pincode !== 'string') {
+            errors.push('pincode must be a string');
+        } else {
+            const trimmed = pincode.trim();
+            if (trimmed.length === 0) {
+                errors.push('pincode cannot be empty');
+            } else if (!PINCODE_REGEX.test(trimmed)) {
+                errors.push('pincode must be 4-10 digits');
+            }
+        }
+    }
+
+    // city — optional
+    if (city !== undefined) {
+        if (typeof city !== 'string') {
+            errors.push('city must be a string');
+        } else {
+            const trimmed = city.trim();
+            if (trimmed.length === 0) {
+                errors.push('city cannot be empty');
+            } else if (trimmed.length > 50) {
+                errors.push('city must be at most 50 characters');
+            }
+        }
+    }
+
+    // state — optional
+    if (state !== undefined) {
+        if (typeof state !== 'string') {
+            errors.push('state must be a string');
+        } else {
+            const trimmed = state.trim();
+            if (trimmed.length === 0) {
+                errors.push('state cannot be empty');
+            } else if (trimmed.length > 50) {
+                errors.push('state must be at most 50 characters');
+            }
+        }
+    }
+
+    // house_number — optional
+    if (house_number !== undefined) {
+        if (typeof house_number !== 'string') {
+            errors.push('house_number must be a string');
+        } else {
+            const trimmed = house_number.trim();
+            if (trimmed.length === 0) {
+                errors.push('house_number cannot be empty');
+            } else if (trimmed.length > 100) {
+                errors.push('house_number must be at most 100 characters');
+            }
+        }
+    }
+
+    // street_locality — optional
+    if (street_locality !== undefined) {
+        if (typeof street_locality !== 'string') {
+            errors.push('street_locality must be a string');
+        } else {
+            const trimmed = street_locality.trim();
+            if (trimmed.length === 0) {
+                errors.push('street_locality cannot be empty');
+            } else if (trimmed.length > 150) {
+                errors.push('street_locality must be at most 150 characters');
+            }
+        }
+    }
+
+    // mobile — optional
+    if (mobile !== undefined) {
+        if (typeof mobile !== 'string') {
+            errors.push('mobile must be a string');
+        } else {
+            const trimmed = mobile.trim();
+            if (trimmed.length === 0) {
+                errors.push('mobile cannot be empty');
+            } else if (!MOBILE_REGEX.test(trimmed)) {
+                errors.push('mobile must be a valid phone number');
+            }
+        }
+    }
+
+    if (errors.length > 0) {
+        res.status(400).json({ success: false, errors });
+        return;
+    }
+
+    // Sanitize
+    if (pincode) req.body.pincode = pincode.trim();
+    if (city) req.body.city = city.trim();
+    if (state) req.body.state = state.trim();
+    if (house_number) req.body.house_number = house_number.trim();
+    if (street_locality) req.body.street_locality = street_locality.trim();
+    if (mobile) req.body.mobile = mobile.trim();
+    if (location) req.body.location = location.trim();
+
+    next();
+}
