@@ -142,6 +142,8 @@
   /* Ensure Toaster remains interactive when modal is open */
   [data-sonner-toaster] {
     pointer-events: auto !important;
+    user-select: text !important;
+    -webkit-user-select: text !important;
   }
 }
 

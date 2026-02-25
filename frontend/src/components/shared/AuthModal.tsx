@@ -58,10 +58,16 @@ export default function AuthModal({ open, onOpenChange, mode }: AuthModalProps) 
 
             if (res.ok) {
                 setStep('otp');
-                // The backend sends back the OTP for testing purposes
                 toast.success(`OTP is: ${data.otp}`, {
                     duration: 10000,
                     position: 'top-center',
+                    action: {
+                        label: 'Copy',
+                        onClick: () => {
+                            navigator.clipboard.writeText(data.otp);
+                            toast.info('OTP copied to clipboard!');
+                        }
+                    }
                 });
             } else {
                 if (data.needs_signup) {
@@ -208,7 +214,7 @@ export default function AuthModal({ open, onOpenChange, mode }: AuthModalProps) 
                         </button>
                     )}
                     <DialogHeader className="w-full text-center sm:text-center mt-1">
-                        <DialogTitle className="text-[22px] font-bold text-gray-900 dark:text-white pb-1">
+                        <DialogTitle className="text-[22px] font-semibold text-gray-900 dark:text-white pb-1">
                             {step === 'phone' && (internalMode === 'login' ? 'Welcome back' : 'Create Account')}
                             {step === 'otp' && 'Verify OTP'}
                             {step === 'signup' && 'Complete your profile'}
@@ -291,7 +297,6 @@ export default function AuthModal({ open, onOpenChange, mode }: AuthModalProps) 
                                     value={otp}
                                     onChange={(val) => setOtp(val.replace(/\D/g, ''))}
                                     inputMode="numeric"
-                                    pattern="[0-9]*"
                                     autoFocus
                                     containerClassName="justify-center"
                                 >
@@ -311,7 +316,7 @@ export default function AuthModal({ open, onOpenChange, mode }: AuthModalProps) 
                                         setOtp('');
                                         handleSendOtp();
                                     }}
-                                    className="text-sm text-primary font-bold hover:underline cursor-pointer transition-all"
+                                    className="text-sm text-primary font-semibold hover:underline cursor-pointer transition-all"
                                 >
                                     Didn't receive? Resend OTP
                                 </button>
@@ -320,7 +325,7 @@ export default function AuthModal({ open, onOpenChange, mode }: AuthModalProps) 
                             <button
                                 onClick={handleVerifyOtp}
                                 disabled={!isOtpValid || isSubmitting}
-                                className="w-full py-3.5 mt-2 rounded-xl bg-primary text-white font-bold text-[15px] transition-all cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed hover:bg-primary/90 active:scale-[0.98] shadow-sm"
+                                className="w-full py-3.5 mt-2 rounded-xl bg-primary text-white font-semibold text-[15px] transition-all cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed hover:bg-primary/90 active:scale-[0.98] shadow-sm"
                             >
                                 {isSubmitting ? (
                                     <Loader2 className="w-5 h-5 animate-spin mx-auto" />
