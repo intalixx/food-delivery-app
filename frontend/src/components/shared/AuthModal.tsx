@@ -192,36 +192,32 @@ export default function AuthModal({ open, onOpenChange, mode }: AuthModalProps) 
                 onInteractOutside={(e) => e.preventDefault()}
             >
                 {/* Header */}
-                <div className="bg-primary/5 dark:bg-primary/10 p-6 pb-4 relative">
+                <div className="bg-primary/5 dark:bg-primary/10 p-6 pb-5 relative flex flex-col items-center">
                     <button
                         onClick={handleClose}
                         className="absolute top-4 right-4 p-2 text-red-500 hover:bg-red-50 dark:hover:bg-red-500/10 rounded-full transition-colors cursor-pointer"
                     >
                         <X className="w-5 h-5" />
                     </button>
-                    <DialogHeader>
-                        <div className="flex items-center gap-3">
-                            {step !== 'phone' && (
-                                <button
-                                    onClick={handleBack}
-                                    className="p-1.5 -ml-1.5 rounded-full hover:bg-black/5 dark:hover:bg-white/10 transition-colors cursor-pointer"
-                                >
-                                    <ArrowLeft className="w-5 h-5 text-gray-600 dark:text-gray-400" />
-                                </button>
-                            )}
-                            <div>
-                                <DialogTitle className="text-xl font-bold text-gray-900 dark:text-white">
-                                    {step === 'phone' && (internalMode === 'login' ? 'Welcome back' : 'Create Account')}
-                                    {step === 'otp' && 'Verify OTP'}
-                                    {step === 'signup' && 'Complete your profile'}
-                                </DialogTitle>
-                                <DialogDescription className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-                                    {step === 'phone' && 'Enter your mobile number to continue'}
-                                    {step === 'otp' && `We sent a 6-digit code to +91 ${phone}`}
-                                    {step === 'signup' && 'Tell us your name and delivery address'}
-                                </DialogDescription>
-                            </div>
-                        </div>
+                    {step !== 'phone' && (
+                        <button
+                            onClick={handleBack}
+                            className="absolute top-4 left-4 p-2 rounded-full hover:bg-black/5 dark:hover:bg-white/10 transition-colors cursor-pointer"
+                        >
+                            <ArrowLeft className="w-5 h-5 text-gray-700 dark:text-gray-300" />
+                        </button>
+                    )}
+                    <DialogHeader className="w-full text-center sm:text-center mt-1">
+                        <DialogTitle className="text-[22px] font-bold text-gray-900 dark:text-white pb-1">
+                            {step === 'phone' && (internalMode === 'login' ? 'Welcome back' : 'Create Account')}
+                            {step === 'otp' && 'Verify OTP'}
+                            {step === 'signup' && 'Complete your profile'}
+                        </DialogTitle>
+                        <DialogDescription className="text-[15px] text-gray-500 dark:text-gray-400 mt-1">
+                            {step === 'phone' && 'Enter your mobile number to continue'}
+                            {step === 'otp' && `We sent a 6-digit code to +91 ${phone}`}
+                            {step === 'signup' && 'Tell us your name and delivery address'}
+                        </DialogDescription>
                     </DialogHeader>
                 </div>
 
@@ -288,8 +284,8 @@ export default function AuthModal({ open, onOpenChange, mode }: AuthModalProps) 
 
                     {/* Step 2: OTP */}
                     {step === 'otp' && (
-                        <div className="space-y-5">
-                            <div className="flex flex-col items-center gap-4">
+                        <div className="space-y-6">
+                            <div className="flex flex-col items-center mt-2 gap-6">
                                 <InputOTP
                                     maxLength={6}
                                     value={otp}
@@ -297,17 +293,16 @@ export default function AuthModal({ open, onOpenChange, mode }: AuthModalProps) 
                                     inputMode="numeric"
                                     pattern="[0-9]*"
                                     autoFocus
-                                    containerClassName="justify-center gap-3"
+                                    containerClassName="justify-center"
                                 >
-                                    <InputOTPGroup className="gap-2">
-                                        <InputOTPSlot index={0} className="w-12! h-13! text-xl font-semibold rounded-xl! border! border-gray-200 dark:border-gray-700 shadow-sm" />
-                                        <InputOTPSlot index={1} className="w-12! h-13! text-xl font-semibold rounded-xl! border! border-gray-200 dark:border-gray-700 shadow-sm" />
-                                        <InputOTPSlot index={2} className="w-12! h-13! text-xl font-semibold rounded-xl! border! border-gray-200 dark:border-gray-700 shadow-sm" />
-                                    </InputOTPGroup>
-                                    <InputOTPGroup className="gap-2">
-                                        <InputOTPSlot index={3} className="w-12! h-13! text-xl font-semibold rounded-xl! border! border-gray-200 dark:border-gray-700 shadow-sm" />
-                                        <InputOTPSlot index={4} className="w-12! h-13! text-xl font-semibold rounded-xl! border! border-gray-200 dark:border-gray-700 shadow-sm" />
-                                        <InputOTPSlot index={5} className="w-12! h-13! text-xl font-semibold rounded-xl! border! border-gray-200 dark:border-gray-700 shadow-sm" />
+                                    <InputOTPGroup className="gap-2 sm:gap-3">
+                                        {[0, 1, 2, 3, 4, 5].map((idx) => (
+                                            <InputOTPSlot
+                                                key={idx}
+                                                index={idx}
+                                                className="w-11 h-12 sm:w-14 sm:h-14 text-xl sm:text-2xl font-semibold rounded-xl! border! border-gray-300 dark:border-gray-600 shadow-sm outline-none ring-primary/50! ring-offset-0!"
+                                            />
+                                        ))}
                                     </InputOTPGroup>
                                 </InputOTP>
 
@@ -316,7 +311,7 @@ export default function AuthModal({ open, onOpenChange, mode }: AuthModalProps) 
                                         setOtp('');
                                         handleSendOtp();
                                     }}
-                                    className="text-xs text-primary font-semibold hover:underline cursor-pointer"
+                                    className="text-sm text-primary font-bold hover:underline cursor-pointer transition-all"
                                 >
                                     Didn't receive? Resend OTP
                                 </button>
@@ -325,10 +320,10 @@ export default function AuthModal({ open, onOpenChange, mode }: AuthModalProps) 
                             <button
                                 onClick={handleVerifyOtp}
                                 disabled={!isOtpValid || isSubmitting}
-                                className="w-full py-3 rounded-xl bg-primary text-white font-semibold text-sm transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed hover:bg-primary/90 active:scale-[0.98]"
+                                className="w-full py-3.5 mt-2 rounded-xl bg-primary text-white font-bold text-[15px] transition-all cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed hover:bg-primary/90 active:scale-[0.98] shadow-sm"
                             >
                                 {isSubmitting ? (
-                                    <Loader2 className="w-4 h-4 animate-spin mx-auto" />
+                                    <Loader2 className="w-5 h-5 animate-spin mx-auto" />
                                 ) : (
                                     'Verify & Continue'
                                 )}

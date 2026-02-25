@@ -1,8 +1,15 @@
-import { User, ShoppingBag, MapPin, Settings, ChevronRight, ChevronLeft } from 'lucide-react';
+import { User, ShoppingBag, MapPin, Settings, ChevronRight, ChevronLeft, LogOut } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
+import { useAuth } from '@/context/AuthContext';
 
 export default function ProfilePage() {
     const navigate = useNavigate();
+    const { user, logout } = useAuth();
+
+    const handleLogout = () => {
+        logout();
+        navigate('/');
+    };
 
     return (
         <div className="flex flex-col min-h-screen bg-gray-50 dark:bg-gray-950 font-sans relative pb-24">
@@ -25,8 +32,10 @@ export default function ProfilePage() {
                     <div className="w-24 h-24 bg-primary/10 rounded-full flex items-center justify-center mb-4 border-2 border-primary/20">
                         <User className="w-10 h-10 text-primary" />
                     </div>
-                    <h2 className="text-2xl font-semibold text-gray-900 dark:text-white tracking-wide">Sudip Santra</h2>
-                    <p className="text-gray-500 font-medium">+91 9876543210</p>
+                    <h2 className="text-2xl font-semibold text-gray-900 dark:text-white tracking-wide">{user?.user_name || 'Guest User'}</h2>
+                    {user?.mobile_number && (
+                        <p className="text-gray-500 font-medium">+91 {user.mobile_number}</p>
+                    )}
                 </div>
 
                 {/* Options Section */}
@@ -66,6 +75,20 @@ export default function ProfilePage() {
                         </div>
                         <ChevronRight className="w-5 h-5 text-gray-400 group-hover:text-primary transition-colors" />
                     </Link>
+                    {/* Logout Button */}
+                    <button
+                        onClick={handleLogout}
+                        className="flex items-center bg-red-50 dark:bg-red-900/10 rounded-4xl p-4 border border-red-100 dark:border-red-900/30 hover:bg-red-100 dark:hover:bg-red-900/20 transition-all group cursor-pointer active:scale-[0.98]"
+                    >
+                        <div className="w-12 h-12 rounded-full bg-red-100 dark:bg-red-900/50 flex items-center justify-center mr-4">
+                            <LogOut className="w-5 h-5 text-red-500 dark:text-red-400" />
+                        </div>
+                        <div className="flex-1 text-left">
+                            <h3 className="text-[16px] font-bold text-red-600 dark:text-red-400">Logout</h3>
+                            <p className="text-[13px] text-red-500/80 font-medium">Log out of your account</p>
+                        </div>
+                        <ChevronRight className="w-5 h-5 text-red-400 group-hover:text-red-600 transition-colors" />
+                    </button>
                 </div>
 
             </div>
