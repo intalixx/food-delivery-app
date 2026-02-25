@@ -15,7 +15,7 @@ const foodItems = [
     // Burgers
     { id: 5, name: 'Classic Burger', category: 'Burgers', price: 150, image: 'https://images.unsplash.com/photo-1568901346375-23c9450c58cd?w=400', description: 'Juicy beef patty, lettuce, tomato, and our signature sauce.' },
     { id: 6, name: 'Cheese Burger', category: 'Burgers', price: 160, image: 'https://images.unsplash.com/photo-1572802419224-296b0aeee0d9?w=400', description: 'Double cheddar cheese melted over a grilled beef patty.' },
-    { id: 7, name: 'Veggie Burger', category: 'Burgers', price: 140, image: 'https://images.unsplash.com/photo-1585238342024-78d387f4a707?w=400', description: 'Plant-based patty with fresh avocado and vegan mayo.' },
+    { id: 7, name: 'Veggie Burger', category: 'Burgers', price: 140, image: 'https://images.unsplash.com/photo-1571091718767-18b5b1457add?w=400', description: 'Plant-based patty with fresh avocado and vegan mayo.' },
     { id: 8, name: 'Chicken Burger', category: 'Burgers', price: 170, image: 'https://images.unsplash.com/photo-1550547660-d9450f859349?w=400', description: 'Crispy fried chicken breast, pickles, and spicy ranch.' },
 
     // Pizzas
