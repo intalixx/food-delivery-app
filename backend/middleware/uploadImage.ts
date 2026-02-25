@@ -1,12 +1,17 @@
 import multer from 'multer';
 import path from 'path';
+import fs from 'fs';
 
 const ALLOWED_TYPES = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp', 'image/svg+xml', 'image/bmp', 'image/tiff'];
 const MAX_SIZE = 5 * 1024 * 1024; // 5 MB
 
 const storage = multer.diskStorage({
     destination: (_req, _file, cb) => {
-        cb(null, path.resolve(__dirname, '..', 'uploads'));
+        const uploadDir = path.resolve(__dirname, '..', 'uploads', 'products');
+        if (!fs.existsSync(uploadDir)) {
+            fs.mkdirSync(uploadDir, { recursive: true });
+        }
+        cb(null, uploadDir);
     },
     filename: (_req, file, cb) => {
         const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1e9);

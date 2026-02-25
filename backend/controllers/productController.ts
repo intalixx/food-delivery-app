@@ -34,7 +34,7 @@ export const ProductController = {
     async create(req: Request, res: Response): Promise<void> {
         try {
             const { product_name, description, price, category_id } = req.body;
-            const image_path = req.file ? `/uploads/${req.file.filename}` : null;
+            const image_path = req.file ? `/uploads/products/${req.file.filename}` : null;
 
             const product = await ProductModel.create(product_name, description, parseFloat(price), image_path, category_id);
             res.status(201).json({ success: true, data: product });
@@ -71,7 +71,7 @@ export const ProductController = {
             if (category_id !== undefined) updateFields.category_id = category_id;
 
             if (req.file) {
-                updateFields.image_path = `/uploads/${req.file.filename}`;
+                updateFields.image_path = `/uploads/products/${req.file.filename}`;
                 // Delete old image if exists
                 if (existing.image_path) {
                     const oldPath = path.resolve(__dirname, '..', existing.image_path.replace(/^\//, ''));
