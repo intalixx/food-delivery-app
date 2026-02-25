@@ -137,10 +137,53 @@ Returns the details of the currently authenticated user based on the `jwt` cooki
 
 - **URL**: `/api/auth/me`
 - **Method**: `GET`
+- **Headers**: `Authorization: Bearer <token>`
 - **Response**: `200 OK`
   ```json
   {
       "success": true,
       "data": { ... }
   }
+  ```
+
+## 6. Update Current User (Me)
+
+Updates the currently authenticated user's profile. Supports image upload for profile photo (stored in `uploads/profile/`).
+
+- **URL**: `/api/auth/me`
+- **Method**: `PUT`
+- **Headers**: `Authorization: Bearer <token>`
+- **Content-Type**: `multipart/form-data`
+
+### Request Body
+
+| Field       | Type | Required | Description                          |
+| ----------- | ---- | -------- | ------------------------------------ |
+| `user_name` | text | No       | Updated display name                 |
+| `email`     | text | No       | Updated email address                |
+| `gender`    | text | No       | Must be `male` or `female`           |
+| `image`     | file | No       | Profile photo (max 5 MB, image only) |
+
+> ⚠️ `mobile_number` cannot be changed via this endpoint.
+
+- **Response**: `200 OK`
+
+  ```json
+  {
+      "success": true,
+      "data": {
+          "id": "uuid",
+          "user_name": "Sudip",
+          "mobile_number": "9876543210",
+          "email": "sudip@example.com",
+          "gender": "male",
+          "image_path": "/uploads/profile/profile-1740472800000-123456789.jpg",
+          ...
+      }
+  }
+  ```
+
+- **Error (400 — No fields)**:
+  ```json
+  { "success": false, "errors": ["No fields to update"] }
   ```

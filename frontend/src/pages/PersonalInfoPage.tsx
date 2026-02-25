@@ -1,46 +1,98 @@
-import { useState, useRef } from 'react';
-import { Camera, ChevronLeft, User, Phone, Mail } from 'lucide-react';
+import { useState, useRef, useEffect } from 'react';
+import { Camera, ChevronLeft, User, Phone, Mail, Loader2 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { toast } from 'sonner';
+import { profileService, getProfileImageUrl } from '@/services/profileService';
 
 export default function PersonalInfoPage() {
     const navigate = useNavigate();
     const fileInputRef = useRef<HTMLInputElement>(null);
-    const [imagePreview, setImagePreview] = useState<string | null>(null);
 
-    // Form State
+    const [isLoading, setIsLoading] = useState(true);
+    const [isSaving, setIsSaving] = useState(false);
+    const [imagePreview, setImagePreview] = useState<string | null>(null);
+    const [selectedFile, setSelectedFile] = useState<File | null>(null);
+
     const [formData, setFormData] = useState({
-        name: 'Sudip Santra',
-        phone: '+91 9876543210',
-        email: 'sudip@example.com',
-        gender: 'Male' as 'Male' | 'Female' | 'Other' | ''
+        name: '',
+        phone: '',
+        email: '',
+        gender: '' as 'male' | 'female' | ''
     });
+
+    // Fetch user data on mount
+    useEffect(() => {
+        const fetchUser = async () => {
+            try {
+                const user = await profileService.getMe();
+                setFormData({
+                    name: user.user_name || '',
+                    phone: user.mobile_number || '',
+                    email: user.email || '',
+                    gender: user.gender || ''
+                });
+                if (user.image_path) {
+                    setImagePreview(getProfileImageUrl(user.image_path));
+                }
+            } catch (error) {
+                console.error('Failed to fetch profile', error);
+                toast.error('Failed to load profile data');
+            } finally {
+                setIsLoading(false);
+            }
+        };
+        fetchUser();
+    }, []);
 
     const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
         if (file) {
-            const render = new FileReader();
-            render.onloadend = () => {
-                setImagePreview(render.result as string);
-                toast.success('Profile photo updated');
-            };
-            render.readAsDataURL(file);
+            setSelectedFile(file);
+            const reader = new FileReader();
+            reader.onloadend = () => setImagePreview(reader.result as string);
+            reader.readAsDataURL(file);
         }
     };
 
-    const handleSave = () => {
-        if (!formData.name || !formData.phone) {
-            toast.error("Name and Phone number are required");
+    const handleSave = async () => {
+        if (!formData.name.trim()) {
+            toast.error('Name is required');
             return;
         }
-        toast.success("Profile saved successfully");
+
+        setIsSaving(true);
+        try {
+            await profileService.updateMe(
+                {
+                    user_name: formData.name.trim(),
+                    email: formData.email.trim(),
+                    gender: formData.gender as 'male' | 'female' | undefined,
+                },
+                selectedFile
+            );
+            toast.success('Profile updated successfully');
+            setSelectedFile(null);
+        } catch (error) {
+            console.error('Save error:', error);
+            toast.error(error instanceof Error ? error.message : 'Failed to save profile');
+        } finally {
+            setIsSaving(false);
+        }
     };
 
     const containerVariants = {
         hidden: { opacity: 0, y: 10 },
         visible: { opacity: 1, y: 0, transition: { duration: 0.3 } }
     };
+
+    if (isLoading) {
+        return (
+            <div className="flex flex-col min-h-screen bg-gray-50 dark:bg-gray-950 items-center justify-center">
+                <Loader2 className="w-8 h-8 animate-spin text-primary" />
+            </div>
+        );
+    }
 
     return (
         <div className="flex flex-col min-h-screen bg-gray-50 dark:bg-gray-950 font-sans relative pb-24">
@@ -109,19 +161,19 @@ export default function PersonalInfoPage() {
                             </div>
                         </div>
 
-                        {/* Phone Field */}
+                        {/* Phone Field (Read Only) */}
                         <div>
-                            <label className="text-[13px] font-bold text-gray-500 ml-1 mb-1.5 block">Phone Number *</label>
+                            <label className="text-[13px] font-bold text-gray-500 ml-1 mb-1.5 block">Phone Number</label>
                             <div className="relative flex items-center">
                                 <Phone className="absolute left-4 w-5 h-5 text-gray-400" />
                                 <input
                                     type="tel"
                                     value={formData.phone}
-                                    onChange={(e) => setFormData(prev => ({ ...prev, phone: e.target.value }))}
-                                    className="w-full pl-12 pr-4 py-3.5 rounded-2xl bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-[15px] font-medium text-gray-900 dark:text-white outline-none focus:border-primary/50 transition-colors"
-                                    placeholder="Enter phone number"
+                                    readOnly
+                                    className="w-full pl-12 pr-4 py-3.5 rounded-2xl bg-gray-100 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700 text-[15px] font-medium text-gray-500 dark:text-gray-400 outline-none cursor-not-allowed"
                                 />
                             </div>
+                            <p className="text-[11px] text-gray-400 ml-1 mt-1">Phone number cannot be changed</p>
                         </div>
 
                         {/* Email Field */}
@@ -143,11 +195,11 @@ export default function PersonalInfoPage() {
                         <div>
                             <label className="text-[13px] font-bold text-gray-500 ml-1 mb-1.5 block">Gender</label>
                             <div className="flex gap-3">
-                                {['Male', 'Female', 'Other'].map((gender) => (
+                                {(['male', 'female'] as const).map((gender) => (
                                     <button
                                         key={gender}
-                                        onClick={() => setFormData(prev => ({ ...prev, gender: gender as 'Male' | 'Female' | 'Other' }))}
-                                        className={`flex-1 py-3 rounded-2xl text-[14px] font-bold border transition-colors cursor-pointer ${formData.gender === gender
+                                        onClick={() => setFormData(prev => ({ ...prev, gender }))}
+                                        className={`flex-1 py-3 rounded-2xl text-[14px] font-bold border transition-colors cursor-pointer capitalize ${formData.gender === gender
                                             ? 'border-primary bg-primary/10 text-primary'
                                             : 'border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 text-gray-600 dark:text-gray-400'
                                             }`}
@@ -162,9 +214,14 @@ export default function PersonalInfoPage() {
                         <div className="pt-2">
                             <button
                                 onClick={handleSave}
-                                className="w-full bg-primary text-white py-2.5 rounded-xl font-semibold text-[14px] tracking-wide cursor-pointer hover:bg-primary/90 transition-colors active:scale-[0.98] flex items-center justify-center shadow-[0_4px_14px_rgba(34,197,94,0.25)] hover:shadow-[0_6px_20px_rgba(34,197,94,0.3)]"
+                                disabled={isSaving}
+                                className="w-full bg-primary text-white py-2.5 rounded-xl font-semibold text-[14px] tracking-wide cursor-pointer hover:bg-primary/90 transition-colors active:scale-[0.98] flex items-center justify-center shadow-[0_4px_14px_rgba(34,197,94,0.25)] hover:shadow-[0_6px_20px_rgba(34,197,94,0.3)] disabled:opacity-60 disabled:cursor-not-allowed"
                             >
-                                Save Details
+                                {isSaving ? (
+                                    <Loader2 className="w-5 h-5 animate-spin" />
+                                ) : (
+                                    'Save Details'
+                                )}
                             </button>
                         </div>
                     </div>

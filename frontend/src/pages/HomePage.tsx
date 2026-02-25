@@ -5,6 +5,7 @@ import { toast } from 'sonner'
 import { useNavigate } from 'react-router-dom'
 import { categoryService, type Category } from '@/services/categoryService'
 import { productService, getProductImageUrl, type Product } from '@/services/productService'
+import { getProfileImageUrl } from '@/services/profileService'
 import AuthModal from '@/components/shared/AuthModal'
 import { useAuth } from '@/context/AuthContext'
 
@@ -79,7 +80,7 @@ export default function HomePage() {
                 {/* Header Section */}
                 <div className="flex items-center justify-between">
                     <div>
-                        <h1 className="text-4xl font-bold text-primary tracking-tight">Intalix.</h1>
+                        <h1 className="text-4xl font-bold text-primary tracking-tight">Intalix</h1>
                         <p className="text-sm text-gray-500 dark:text-gray-400 font-medium mt-1">Find The Best Food Around You !</p>
                     </div>
                     <div className="flex items-center gap-2">
@@ -97,9 +98,13 @@ export default function HomePage() {
                                 {/* Top-right profile icon / avatar (visible on all screens) */}
                                 <div
                                     onClick={() => navigate('/profile')}
-                                    className="flex items-center justify-center w-10 h-10 rounded-full bg-primary/10 border border-primary/20 text-primary cursor-pointer hover:bg-primary/20 transition-colors"
+                                    className="flex items-center justify-center w-10 h-10 rounded-full bg-primary/10 border border-primary/20 text-primary cursor-pointer hover:bg-primary/20 transition-colors overflow-hidden"
                                 >
-                                    <User className="w-5 h-5" />
+                                    {user.image_path ? (
+                                        <img src={getProfileImageUrl(user.image_path)!} alt={user.user_name} className="w-full h-full object-cover" />
+                                    ) : (
+                                        <User className="w-5 h-5" />
+                                    )}
                                 </div>
                             </div>
                         ) : (

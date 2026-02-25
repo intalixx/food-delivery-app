@@ -3,6 +3,8 @@ import { UserModel, User } from '../models/userModel';
 import { AddressModel, Address } from '../models/addressModel';
 import { OtpModel } from '../models/otpModel';
 import { generateToken, setAuthCookie, clearAuthCookie } from '../utils/jwt';
+import fs from 'fs';
+import path from 'path';
 
 export const AuthController = {
     // @desc    Send OTP to user
@@ -173,6 +175,48 @@ export const AuthController = {
             res.status(200).json({ success: true, data: user });
         } else {
             res.status(404).json({ success: false, errors: ['User not found'] });
+        }
+    },
+
+    // @desc    Update current logged in user's profile
+    // @route   PUT /api/auth/me
+    // @access  Private
+    async updateMe(req: any, res: Response): Promise<void> {
+        try {
+            const user = req.user as User;
+            if (!user) {
+                if (req.file) fs.unlink(req.file.path, () => { });
+                res.status(404).json({ success: false, errors: ['User not found'] });
+                return;
+            }
+
+            const { user_name, email, gender } = req.body;
+            const updateFields: Partial<Pick<User, 'user_name' | 'email' | 'gender' | 'image_path'>> = {};
+
+            if (user_name !== undefined) updateFields.user_name = user_name;
+            if (email !== undefined) updateFields.email = email;
+            if (gender !== undefined) updateFields.gender = gender;
+
+            if (req.file) {
+                updateFields.image_path = `/uploads/profile/${req.file.filename}`;
+                // Delete old profile image if exists
+                if (user.image_path) {
+                    const oldPath = path.resolve(__dirname, '..', user.image_path.replace(/^\//, ''));
+                    fs.unlink(oldPath, () => { });
+                }
+            }
+
+            if (Object.keys(updateFields).length === 0) {
+                res.status(400).json({ success: false, errors: ['No fields to update'] });
+                return;
+            }
+
+            const updatedUser = await UserModel.update(user.id, updateFields);
+            res.status(200).json({ success: true, data: updatedUser });
+        } catch (error: any) {
+            if (req.file) fs.unlink(req.file.path, () => { });
+            console.error('Update profile error:', error);
+            res.status(500).json({ success: false, errors: ['Internal server error'] });
         }
     }
 };
