@@ -52,8 +52,8 @@ export default function HomePage() {
                         <p className="text-sm text-gray-500 dark:text-gray-400 font-medium mt-1">Find The Best Food Around You !</p>
                     </div>
                     <div className="flex items-center gap-2">
-                        <button className="px-4 py-2 rounded-full border border-primary text-[13px] font-semibold text-primary hover:bg-primary/5 transition-colors cursor-pointer flex items-center justify-center gap-1.5 leading-none"><LogIn className="w-3.5 h-3.5" />Login</button>
-                        <button className="px-4 py-2 rounded-full bg-primary text-white text-[13px] font-semibold hover:bg-primary/90 transition-colors cursor-pointer flex items-center justify-center gap-1.5 leading-none"><UserPlus className="w-3.5 h-3.5" />Sign Up</button>
+                        <button className="p-2 md:px-4 md:py-2 rounded-full border border-primary text-[13px] font-semibold text-primary hover:bg-primary/5 transition-colors cursor-pointer flex items-center justify-center gap-1.5 leading-none"><LogIn className="w-4 h-4" /><span className="hidden md:inline">Login</span></button>
+                        <button className="p-2 md:px-4 md:py-2 rounded-full bg-primary text-white text-[13px] font-semibold hover:bg-primary/90 transition-colors cursor-pointer flex items-center justify-center gap-1.5 leading-none"><UserPlus className="w-4 h-4" /><span className="hidden md:inline">Sign Up</span></button>
                     </div>
                 </div>
 
