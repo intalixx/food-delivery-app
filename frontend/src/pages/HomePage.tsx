@@ -25,16 +25,16 @@ const foodItems = [
     { id: 12, name: 'Veggie Pizza', category: 'Pizzas', price: 170, image: 'https://images.unsplash.com/photo-1513104890138-7c749659a591?w=400', description: 'Loaded with bell peppers, mushrooms, olives, and onions.' }
 ];
 
-const categories = ['Salads', 'Burgers', 'Pizzas'];
+const categories = ['All', 'Salads', 'Burgers', 'Pizzas'];
 
 export default function HomePage() {
     const { addToCart, items } = useCart();
     const navigate = useNavigate();
-    const [activeCategory, setActiveCategory] = useState('Salads');
+    const [activeCategory, setActiveCategory] = useState('All');
     const [showSortMenu, setShowSortMenu] = useState(false);
     const [sortBy, setSortBy] = useState<'none' | 'asc' | 'desc'>('none');
 
-    let filteredItems = foodItems.filter(item => item.category === activeCategory);
+    let filteredItems = activeCategory === 'All' ? foodItems : foodItems.filter(item => item.category === activeCategory);
 
     if (sortBy === 'asc') {
         filteredItems = [...filteredItems].sort((a, b) => a.price - b.price);
