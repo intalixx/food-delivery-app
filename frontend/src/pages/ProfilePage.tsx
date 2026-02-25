@@ -1,6 +1,7 @@
 import { User, ShoppingBag, MapPin, Settings, ChevronRight, ChevronLeft, LogOut } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/context/AuthContext';
+import { getProfileImageUrl } from '@/services/profileService';
 
 export default function ProfilePage() {
     const navigate = useNavigate();
@@ -29,10 +30,14 @@ export default function ProfilePage() {
 
                 {/* Profile Header Section */}
                 <div className="flex flex-col items-center justify-center">
-                    <div className="w-24 h-24 bg-primary/10 rounded-full flex items-center justify-center mb-4 border-2 border-primary/20">
-                        <User className="w-10 h-10 text-primary" />
+                    <div className="w-24 h-24 bg-primary/10 rounded-full flex items-center justify-center mb-4 border-2 border-primary/20 overflow-hidden">
+                        {user?.image_path ? (
+                            <img src={getProfileImageUrl(user.image_path)!} alt={user.user_name} className="w-full h-full object-cover" />
+                        ) : (
+                            <User className="w-10 h-10 text-primary" />
+                        )}
                     </div>
-                    <h2 className="text-2xl font-semibold text-gray-900 dark:text-white tracking-wide">{user?.user_name || 'Guest User'}</h2>
+                    <h2 className="text-2xl font-bold text-gray-900 dark:text-white">{user?.user_name || 'Guest User'}</h2>
                     {user?.mobile_number && (
                         <p className="text-gray-500 font-medium">+91 {user.mobile_number}</p>
                     )}
