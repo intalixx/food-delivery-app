@@ -37,7 +37,7 @@ export default function CartPage() {
     return (
         <div className="flex flex-col min-h-screen bg-gray-50 dark:bg-gray-950 font-sans relative pb-24">
             {/* Standard Clean Header */}
-            <div className="pt-6 pb-2 px-4 md:px-6">
+            <div className="p-4 border-b border-gray-200 dark:border-gray-800">
                 <div className="flex items-center justify-between max-w-xl mx-auto w-full">
                     <h1 className="text-3xl md:text-[28px] font-bold tracking-wide text-gray-900 dark:text-white">Cart</h1>
                     <div className="flex items-center gap-2">
