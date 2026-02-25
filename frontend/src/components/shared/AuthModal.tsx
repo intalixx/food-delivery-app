@@ -1,10 +1,11 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Phone, ArrowLeft, User, MapPin, Loader2, X } from 'lucide-react';
 import { toast } from 'sonner';
 import {
     Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription
 } from '@/components/ui/dialog';
 import { InputOTP, InputOTPGroup, InputOTPSlot } from '@/components/ui/input-otp';
+import { useAuth } from '@/context/AuthContext';
 
 type ModalStep = 'phone' | 'otp' | 'signup';
 
@@ -15,6 +16,8 @@ interface AuthModalProps {
 }
 
 export default function AuthModal({ open, onOpenChange, mode }: AuthModalProps) {
+    const { login } = useAuth();
+    const [internalMode, setInternalMode] = useState<'login' | 'signup'>(mode);
     const [step, setStep] = useState<ModalStep>('phone');
     const [phone, setPhone] = useState('');
     const [otp, setOtp] = useState('');
@@ -31,6 +34,12 @@ export default function AuthModal({ open, onOpenChange, mode }: AuthModalProps) 
     const isPhoneValid = phone.length === 10;
     const isOtpValid = otp.length === 6;
 
+    useEffect(() => {
+        if (open) {
+            setInternalMode(mode);
+        }
+    }, [mode, open]);
+
     const handlePhoneChange = (value: string) => {
         const digitsOnly = value.replace(/\D/g, '').slice(0, 10);
         setPhone(digitsOnly);
@@ -43,7 +52,7 @@ export default function AuthModal({ open, onOpenChange, mode }: AuthModalProps) 
             const res = await fetch(`${import.meta.env.VITE_API_BASE_URL}/auth/send-otp`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ mobile_number: phone })
+                body: JSON.stringify({ mobile_number: phone, mode: internalMode })
             });
             const data = await res.json();
 
@@ -55,7 +64,21 @@ export default function AuthModal({ open, onOpenChange, mode }: AuthModalProps) 
                     position: 'top-center',
                 });
             } else {
-                toast.error(data.errors?.[0] || 'Failed to send OTP');
+                if (data.needs_signup) {
+                    toast.error('Account not found.', {
+                        description: 'Would you like to sign up instead?',
+                        action: {
+                            label: 'Sign up',
+                            onClick: () => {
+                                setInternalMode('signup');
+                                handleSendOtp();
+                            }
+                        },
+                        duration: 8000,
+                    });
+                } else {
+                    toast.error(data.errors?.[0] || 'Failed to send OTP');
+                }
             }
         } catch {
             toast.error('Network error. Failed to send OTP.');
@@ -81,8 +104,8 @@ export default function AuthModal({ open, onOpenChange, mode }: AuthModalProps) 
                     toast.info('Please complete your profile');
                 } else {
                     toast.success('Logged in successfully!');
+                    login(data.user, data.token);
                     handleClose();
-                    // Optional: refresh user or set global state if needed
                 }
             } else {
                 toast.error(data.errors?.[0] || 'Invalid OTP');
@@ -123,6 +146,7 @@ export default function AuthModal({ open, onOpenChange, mode }: AuthModalProps) 
 
             if (res.ok) {
                 toast.success('Account created successfully!');
+                login(data.user, data.token);
                 handleClose();
             } else {
                 toast.error(data.errors?.[0] || 'Failed to sign up');
@@ -187,7 +211,7 @@ export default function AuthModal({ open, onOpenChange, mode }: AuthModalProps) 
                             )}
                             <div>
                                 <DialogTitle className="text-xl font-bold text-gray-900 dark:text-white">
-                                    {step === 'phone' && (mode === 'login' ? 'Welcome back' : 'Create Account')}
+                                    {step === 'phone' && (internalMode === 'login' ? 'Welcome back' : 'Create Account')}
                                     {step === 'otp' && 'Verify OTP'}
                                     {step === 'signup' && 'Complete your profile'}
                                 </DialogTitle>
@@ -234,9 +258,27 @@ export default function AuthModal({ open, onOpenChange, mode }: AuthModalProps) 
                                 {isSubmitting ? (
                                     <Loader2 className="w-4 h-4 animate-spin mx-auto" />
                                 ) : (
-                                    'Send OTP'
+                                    internalMode === 'login' ? 'Login' : 'Send OTP'
                                 )}
                             </button>
+
+                            <div className="text-center text-sm text-gray-500 dark:text-gray-400">
+                                {internalMode === 'login' ? (
+                                    <>
+                                        Don't have an account?{' '}
+                                        <button onClick={() => setInternalMode('signup')} className="text-primary font-semibold cursor-pointer outline-none hover:underline">
+                                            Sign up
+                                        </button>
+                                    </>
+                                ) : (
+                                    <>
+                                        Already have an account?{' '}
+                                        <button onClick={() => setInternalMode('login')} className="text-primary font-semibold cursor-pointer outline-none hover:underline">
+                                            Login
+                                        </button>
+                                    </>
+                                )}
+                            </div>
 
                             <p className="text-center text-xs text-gray-400 dark:text-gray-500">
                                 By continuing, you agree to our Terms of Service & Privacy Policy

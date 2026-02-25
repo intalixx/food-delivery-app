@@ -1,14 +1,16 @@
 import { useState, useEffect } from 'react';
-import { Search, SlidersHorizontal, IndianRupee, LogIn, UserPlus, Loader2 } from 'lucide-react'
+import { Search, SlidersHorizontal, IndianRupee, LogIn, UserPlus, Loader2, User } from 'lucide-react'
 import { useCart } from '@/hooks/useCart'
 import { toast } from 'sonner'
 import { useNavigate } from 'react-router-dom'
 import { categoryService, type Category } from '@/services/categoryService'
 import { productService, getProductImageUrl, type Product } from '@/services/productService'
 import AuthModal from '@/components/shared/AuthModal'
+import { useAuth } from '@/context/AuthContext'
 
 export default function HomePage() {
     const { addToCart, items } = useCart();
+    const { user, isAuthenticated, isLoading } = useAuth();
     const navigate = useNavigate();
 
     const [categories, setCategories] = useState<Category[]>([]);
@@ -81,8 +83,31 @@ export default function HomePage() {
                         <p className="text-sm text-gray-500 dark:text-gray-400 font-medium mt-1">Find The Best Food Around You !</p>
                     </div>
                     <div className="flex items-center gap-2">
-                        <button onClick={() => { setAuthMode('login'); setAuthOpen(true); }} className="p-2 md:px-4 md:py-2 rounded-full border border-primary text-[13px] font-semibold text-primary hover:bg-primary/5 transition-colors cursor-pointer flex items-center justify-center gap-1.5 leading-none"><LogIn className="w-4 h-4" /><span className="hidden md:inline">Login</span></button>
-                        <button onClick={() => { setAuthMode('signup'); setAuthOpen(true); }} className="p-2 md:px-4 md:py-2 rounded-full bg-primary text-white text-[13px] font-semibold hover:bg-primary/90 transition-colors cursor-pointer flex items-center justify-center gap-1.5 leading-none"><UserPlus className="w-4 h-4" /><span className="hidden md:inline">Sign Up</span></button>
+                        {isLoading ? (
+                            <div className="animate-pulse flex items-center gap-4">
+                                <div className="h-10 w-24 bg-gray-200 dark:bg-gray-800 rounded-full" />
+                            </div>
+                        ) : isAuthenticated && user ? (
+                            <div className="flex items-center gap-4">
+                                {/* Desktop Welcome Text */}
+                                <div className="hidden md:flex flex-col items-end text-[13px]">
+                                    <span className="text-gray-500 dark:text-gray-400 font-medium">Welcome Back,</span>
+                                    <span className="font-bold text-gray-900 dark:text-white leading-tight capitalize">{user.user_name}</span>
+                                </div>
+                                {/* Top-right profile icon / avatar (visible on all screens) */}
+                                <div
+                                    onClick={() => navigate('/profile')}
+                                    className="flex items-center justify-center w-10 h-10 rounded-full bg-primary/10 border border-primary/20 text-primary cursor-pointer hover:bg-primary/20 transition-colors"
+                                >
+                                    <User className="w-5 h-5" />
+                                </div>
+                            </div>
+                        ) : (
+                            <>
+                                <button onClick={() => { setAuthMode('login'); setAuthOpen(true); }} className="p-2 md:px-4 md:py-2 rounded-full border border-primary text-[13px] font-semibold text-primary hover:bg-primary/5 transition-colors cursor-pointer flex items-center justify-center gap-1.5 leading-none"><LogIn className="w-4 h-4" /><span className="hidden md:inline">Login</span></button>
+                                <button onClick={() => { setAuthMode('signup'); setAuthOpen(true); }} className="p-2 md:px-4 md:py-2 rounded-full bg-primary text-white text-[13px] font-semibold hover:bg-primary/90 transition-colors cursor-pointer flex items-center justify-center gap-1.5 leading-none"><UserPlus className="w-4 h-4" /><span className="hidden md:inline">Sign Up</span></button>
+                            </>
+                        )}
                     </div>
                 </div>
 

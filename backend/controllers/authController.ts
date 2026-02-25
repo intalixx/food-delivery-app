@@ -9,17 +9,24 @@ export const AuthController = {
     // @route   POST /api/auth/send-otp
     // @access  Public
     async sendOtp(req: Request, res: Response): Promise<void> {
-        const { mobile_number } = req.body;
+        const { mobile_number, mode } = req.body;
 
         if (!mobile_number || mobile_number.length !== 10) {
             res.status(400).json({ success: false, errors: ['Valid 10-digit mobile number is required'] });
             return;
         }
 
-        // Generate a 6-digit random OTP
-        const otp = Math.floor(100000 + Math.random() * 900000).toString();
-
         try {
+            const existingUser = await UserModel.getByMobile(mobile_number);
+
+            if (mode === 'login' && !existingUser) {
+                res.status(404).json({ success: false, errors: ['Account not found'], needs_signup: true });
+                return;
+            }
+
+            // Generate a 6-digit random OTP
+            const otp = Math.floor(100000 + Math.random() * 900000).toString();
+
             await OtpModel.createOrUpdate(mobile_number, otp);
 
             console.log(`\n======================================`);

@@ -1,4 +1,4 @@
-import { Home, ShoppingCart, User } from 'lucide-react'
+import { Home, ShoppingCart, ClipboardList } from 'lucide-react'
 import { Link, useLocation } from 'react-router-dom'
 import { useCart } from '../../hooks/useCart';
 
@@ -33,11 +33,11 @@ export default function Navbar() {
                 </div>
 
                 <Link
-                    to="/profile"
-                    className={`inline-flex flex-col items-center justify-center px-5 transition-colors ${location.pathname === '/profile' ? 'text-primary' : 'text-gray-400 hover:text-gray-600 dark:text-gray-500 dark:hover:text-gray-300'}`}
+                    to="/profile/orders"
+                    className={`inline-flex flex-col items-center justify-center px-5 transition-colors ${location.pathname === '/profile/orders' ? 'text-primary' : 'text-gray-400 hover:text-gray-600 dark:text-gray-500 dark:hover:text-gray-300'}`}
                 >
-                    <User className="w-6 h-6 mb-1" />
-                    <span className="text-[11px] font-semibold tracking-wide">Profile</span>
+                    <ClipboardList className="w-6 h-6 mb-1" />
+                    <span className="text-[11px] font-semibold tracking-wide">My Orders</span>
                 </Link>
             </div>
         </div>
