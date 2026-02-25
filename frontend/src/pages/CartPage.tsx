@@ -80,7 +80,7 @@ export default function CartPage() {
                                     dragConstraints={{ left: 0, right: 0 }}
                                     dragElastic={0.8}
                                     whileTap={{ cursor: 'grabbing' }}
-                                    onDragEnd={(e, { offset }) => {
+                                    onDragEnd={(_, { offset }) => {
                                         if (Math.abs(offset.x) > 100) {
                                             handleRemoveItem(item.id);
                                         }
@@ -160,7 +160,7 @@ export default function CartPage() {
                             </div>
                         </div>
 
-                        <div className="flex justify-between items-center text-[18px] font-bold text-gray-900 dark:text-white mt-4 mb-6">
+                        <div className="flex justify-between items-center text-base font-bold text-gray-900 dark:text-white my-4">
                             <span>Final Amount</span>
                             <div className="flex items-center">
                                 <IndianRupee className="w-4 h-4 mr-0.5 stroke-3" /> {items.length > 0 ? finalTotal : 0}
