@@ -16,7 +16,7 @@ export default function CartPage() {
         toast.success('Cart cleared successfully');
     };
 
-    const handleRemoveItem = (id: number) => {
+    const handleRemoveItem = (id: string) => {
         removeFromCart(id);
         toast.success('Product removed from cart');
     };
