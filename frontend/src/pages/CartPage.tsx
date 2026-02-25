@@ -39,7 +39,7 @@ export default function CartPage() {
             {/* Standard Clean Header */}
             <div className="p-4 border-b border-gray-200 dark:border-gray-800">
                 <div className="flex items-center justify-between max-w-xl mx-auto w-full">
-                    <h1 className="text-3xl md:text-[28px] font-bold tracking-wide text-gray-900 dark:text-white">Cart</h1>
+                    <h1 className="text-3xl md:text-[28px] font-bold text-gray-900 dark:text-white">Cart</h1>
                     <div className="flex items-center gap-2">
                         <button onClick={() => navigate(-1)} className="flex items-center py-1.5 px-3 rounded-full hover:bg-gray-200 dark:hover:bg-gray-800 transition-colors cursor-pointer text-gray-800 dark:text-gray-200 border border-gray-200 dark:border-gray-700">
                             <ChevronLeft className="w-4 h-4 mr-1" />
