@@ -11,6 +11,7 @@ const PORT = process.env.PORT || 8000;
 // Middleware
 app.use(cors());
 app.use(express.json());
+app.use('/uploads', express.static(path.resolve(__dirname, 'uploads')));
 
 // Root
 app.get('/', (_req, res) => {
@@ -21,6 +22,12 @@ app.get('/', (_req, res) => {
 app.get('/api/health', (_req, res) => {
     res.json({ status: 'ok', uptime: process.uptime() });
 });
+
+// Routes
+import categoryRoutes from './routes/categoryRoutes';
+import productRoutes from './routes/productRoutes';
+app.use('/api/categories', categoryRoutes);
+app.use('/api/products', productRoutes);
 
 // Start server
 app.listen(PORT, () => {
