@@ -229,8 +229,8 @@ export default function SavedAddressPage() {
                                 </AnimatePresence>
 
                                 <motion.div layout className="flex gap-3 mt-2">
-                                    <button onClick={() => { setIsAdding(false); setEditingId(null); setNewAddress({ type: 'Home', location: '', pincode: '', city: '', state: '', houseNumber: '', streetLocality: '', mobile: '' }); }} className="flex-1 py-3 bg-gray-100 dark:bg-gray-800 text-gray-900 dark:text-white rounded-2xl font-bold text-[14px] cursor-pointer">Cancel</button>
-                                    <button onClick={handleAddAddress} className="flex-1 py-3 bg-primary text-white rounded-2xl font-bold text-[14px] cursor-pointer">{editingId ? 'Update Address' : 'Save Address'}</button>
+                                    <button onClick={() => { setIsAdding(false); setEditingId(null); setNewAddress({ type: 'Home', location: '', pincode: '', city: '', state: '', houseNumber: '', streetLocality: '', mobile: '' }); }} className="flex-1 py-3 bg-gray-100 dark:bg-gray-800 text-gray-900 dark:text-white rounded-2xl font-semibold text-[14px] cursor-pointer">Cancel</button>
+                                    <button onClick={handleAddAddress} className="flex-1 py-3 bg-primary text-white rounded-2xl font-semibold text-[14px] cursor-pointer">{editingId ? 'Update Address' : 'Save Address'}</button>
                                 </motion.div>
                             </div>
                         </motion.div>

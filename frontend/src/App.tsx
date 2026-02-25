@@ -4,6 +4,7 @@ import CartPage from '@/pages/CartPage'
 import ProfilePage from '@/pages/ProfilePage'
 import MyOrdersPage from '@/pages/MyOrdersPage'
 import SavedAddressPage from '@/pages/SavedAddressPage'
+import PersonalInfoPage from '@/pages/PersonalInfoPage'
 import Navbar from '@/components/shared/Navbar'
 import { Toaster } from 'sonner'
 
@@ -16,6 +17,7 @@ function App() {
         <Route path="/profile" element={<ProfilePage />} />
         <Route path="/profile/orders" element={<MyOrdersPage />} />
         <Route path="/profile/address" element={<SavedAddressPage />} />
+        <Route path="/profile/personal-info" element={<PersonalInfoPage />} />
       </Routes>
       <Toaster position="top-center" richColors />
       <Navbar />
