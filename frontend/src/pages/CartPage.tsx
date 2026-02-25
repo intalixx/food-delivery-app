@@ -1,7 +1,8 @@
-import { useCart } from '../hooks/useCart';
+import { useCart } from '@/hooks/useCart';
 import { IndianRupee, Minus, Plus, ChevronLeft, ShoppingCart, Trash2 } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
+import { toast } from 'sonner';
 
 export default function CartPage() {
     const { items, updateQuantity, totalPrice, clearCart, removeFromCart } = useCart();
@@ -9,6 +10,16 @@ export default function CartPage() {
 
     const totalItemCount = items.reduce((acc, item) => acc + item.quantity, 0);
     const finalTotal = totalPrice;
+
+    const handleClearCart = () => {
+        clearCart();
+        toast.success('Cart cleared successfully');
+    };
+
+    const handleRemoveItem = (id: number) => {
+        removeFromCart(id);
+        toast.success('Product removed from cart');
+    };
 
     if (items.length === 0) {
         return (
@@ -34,7 +45,7 @@ export default function CartPage() {
                             <ChevronLeft className="w-4 h-4 mr-1" />
                             <span className="text-[14px] font-semibold tracking-wide">Back</span>
                         </button>
-                        <button onClick={clearCart} className="flex items-center py-1.5 px-3 rounded-full hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors cursor-pointer text-red-500 border border-red-200 dark:border-red-900/50">
+                        <button onClick={handleClearCart} className="flex items-center py-1.5 px-3 rounded-full hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors cursor-pointer text-red-500 border border-red-200 dark:border-red-900/50">
                             <Trash2 className="w-4 h-4 mr-1" />
                             <span className="text-[14px] font-semibold tracking-wide">Clear</span>
                         </button>
@@ -71,7 +82,7 @@ export default function CartPage() {
                                     whileTap={{ cursor: 'grabbing' }}
                                     onDragEnd={(e, { offset }) => {
                                         if (Math.abs(offset.x) > 100) {
-                                            removeFromCart(item.id);
+                                            handleRemoveItem(item.id);
                                         }
                                     }}
                                 >
@@ -94,7 +105,13 @@ export default function CartPage() {
                                         <div className="flex flex-col items-center">
                                             <div className="flex items-center">
                                                 <button
-                                                    onClick={() => updateQuantity(item.id, item.quantity - 1)}
+                                                    onClick={() => {
+                                                        if (item.quantity === 1) {
+                                                            handleRemoveItem(item.id);
+                                                        } else {
+                                                            updateQuantity(item.id, item.quantity - 1);
+                                                        }
+                                                    }}
                                                     className="w-5.5 h-5.5 rounded-full bg-gray-900 dark:bg-gray-700 text-white flex items-center justify-center cursor-pointer active:scale-95 transition-transform"
                                                 >
                                                     <Minus className="w-2.5 h-2.5 stroke-[3.5]" />

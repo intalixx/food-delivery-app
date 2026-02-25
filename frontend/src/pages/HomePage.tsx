@@ -1,6 +1,8 @@
 import { useState } from 'react';
 import { Search, SlidersHorizontal, IndianRupee } from 'lucide-react'
-import { useCart } from '../hooks/useCart'
+import { useCart } from '@/hooks/useCart'
+import { toast } from 'sonner'
+import { useNavigate } from 'react-router-dom'
 
 // Dummy data for our food items with categories
 const foodItems = [
@@ -26,7 +28,8 @@ const foodItems = [
 const categories = ['Salads', 'Burgers', 'Pizzas'];
 
 export default function HomePage() {
-    const { addToCart } = useCart();
+    const { addToCart, items } = useCart();
+    const navigate = useNavigate();
     const [activeCategory, setActiveCategory] = useState('Salads');
     const [showSortMenu, setShowSortMenu] = useState(false);
     const [sortBy, setSortBy] = useState<'none' | 'asc' | 'desc'>('none');
@@ -133,12 +136,23 @@ export default function HomePage() {
                                     <button
                                         onClick={(e) => {
                                             e.stopPropagation();
-                                            addToCart({
-                                                id: item.id,
-                                                name: item.name,
-                                                price: item.price,
-                                                image: item.image
-                                            })
+                                            const isAlreadyInCart = items.some(cartItem => cartItem.id === item.id);
+
+                                            if (isAlreadyInCart) {
+                                                toast.info('Product is already in cart', {
+                                                    action: { label: 'Go to Cart', onClick: () => navigate('/cart') }
+                                                });
+                                            } else {
+                                                addToCart({
+                                                    id: item.id,
+                                                    name: item.name,
+                                                    price: item.price,
+                                                    image: item.image
+                                                });
+                                                toast.success('Product added to cart', {
+                                                    action: { label: 'Go to Cart', onClick: () => navigate('/cart') }
+                                                });
+                                            }
                                         }}
                                         className="px-3 py-1 bg-white dark:bg-gray-900 text-primary border border-primary font-bold text-[11px] rounded-md cursor-pointer"
                                     >
