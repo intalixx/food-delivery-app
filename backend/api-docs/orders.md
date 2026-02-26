@@ -299,6 +299,88 @@ curl -X PATCH http://localhost:8000/api/orders/<order-uuid>/cancel \
 
 ---
 
+## 5. Update Order Status
+
+**PATCH** `/api/orders/:id/status`
+
+> **Content-Type:** `application/json`
+> **Auth:** Required (Bearer Token)
+
+Updates the status of an order. Typically used by admin or internal systems to progress an order through its lifecycle. On success, an SSE event is automatically pushed to the user's active connections for real-time updates (see [SSE docs](./sse-order-status.md)).
+
+### Request Body
+
+```json
+{
+  "order_status": "Preparing"
+}
+```
+
+### curl
+
+```bash
+curl -X PATCH http://localhost:8000/api/orders/<order-uuid>/status \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer <token>" \
+  -d '{"order_status": "Preparing"}'
+```
+
+### Validation Rules
+
+| Field          | Type   | Required | Rules                                                                                       |
+| -------------- | ------ | -------- | ------------------------------------------------------------------------------------------- |
+| `order_status` | string | Yes      | Must be one of: `Order Received`, `Preparing`, `Out for Delivery`, `Delivered`, `Cancelled` |
+
+### Response (200)
+
+```json
+{
+  "success": true,
+  "data": {
+    "id": "order-uuid",
+    "order_code": "ORD-A7X3B2",
+    "user_id": "user-uuid",
+    "address_id": "address-uuid",
+    "total_qty": 3,
+    "final_amount": 460.0,
+    "order_status": "Preparing",
+    "created_at": "2026-02-26T05:00:00.000Z",
+    "updated_at": "2026-02-26T05:10:00.000Z"
+  },
+  "message": "Order status updated"
+}
+```
+
+### Side Effect — SSE Push
+
+On successful update, the server pushes an `order_status_update` event to all active SSE connections for the order's user:
+
+```
+event: order_status_update
+data: {"order_id":"order-uuid","order_code":"ORD-A7X3B2","order_status":"Preparing"}
+```
+
+> The user's My Orders page receives this event instantly — the badge color updates and a toast notification appears without any page refresh.
+
+### Error (400 - Invalid Status)
+
+```json
+{
+  "success": false,
+  "errors": [
+    "Invalid status. Must be one of: Order Received, Preparing, Out for Delivery, Delivered, Cancelled"
+  ]
+}
+```
+
+### Error (404 - Order Not Found)
+
+```json
+{ "success": false, "errors": ["Order not found"] }
+```
+
+---
+
 ## Data Models
 
 ### Order

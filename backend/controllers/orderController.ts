@@ -3,6 +3,7 @@ import { OrderModel } from '../models/orderModel';
 import { AddressModel } from '../models/addressModel';
 import { ProductModel } from '../models/productModel';
 import { AuthRequest } from '../middleware/authMiddleware';
+import { sseManager } from '../utils/sseManager';
 
 export const OrderController = {
     /**
@@ -112,6 +113,41 @@ export const OrderController = {
     },
 
     /**
+     * PATCH /api/orders/:id/status
+     * Update order status (admin/internal use) and broadcast via SSE.
+     */
+    async updateStatus(req: AuthRequest, res: Response): Promise<void> {
+        try {
+            const orderId = req.params.id as string;
+            const { order_status } = req.body as { order_status: string };
+
+            const validStatuses = ['Order Received', 'Preparing', 'Out for Delivery', 'Delivered', 'Cancelled'];
+            if (!validStatuses.includes(order_status)) {
+                res.status(400).json({ success: false, errors: [`Invalid status. Must be one of: ${validStatuses.join(', ')}`] });
+                return;
+            }
+
+            const updated = await OrderModel.updateStatus(orderId, order_status);
+            if (!updated) {
+                res.status(404).json({ success: false, errors: ['Order not found'] });
+                return;
+            }
+
+            // Broadcast status change to the order's user via SSE
+            sseManager.sendToUser(updated.user_id, 'order_status_update', {
+                order_id: updated.id,
+                order_code: updated.order_code,
+                order_status: updated.order_status,
+            });
+
+            res.json({ success: true, data: updated, message: 'Order status updated' });
+        } catch (error) {
+            console.error('Error updating order status:', error);
+            res.status(500).json({ success: false, errors: ['Failed to update order status'] });
+        }
+    },
+
+    /**
      * PATCH /api/orders/:id/cancel
      * Cancel an order (only if status is 'Order Received').
      */
@@ -128,10 +164,48 @@ export const OrderController = {
                 return;
             }
 
+            // Broadcast cancellation via SSE
+            sseManager.sendToUser(userId, 'order_status_update', {
+                order_id: cancelled.id,
+                order_code: cancelled.order_code,
+                order_status: cancelled.order_status,
+            });
+
             res.json({ success: true, data: cancelled, message: 'Order cancelled successfully' });
         } catch (error) {
             console.error('Error cancelling order:', error);
             res.status(500).json({ success: false, errors: ['Failed to cancel order'] });
         }
+    },
+
+    /**
+     * GET /api/orders/stream
+     * SSE endpoint — streams real-time order status updates to authenticated user.
+     */
+    async stream(req: AuthRequest, res: Response): Promise<void> {
+        const userId = req.user!.id;
+
+        // Set SSE headers
+        res.setHeader('Content-Type', 'text/event-stream');
+        res.setHeader('Cache-Control', 'no-cache');
+        res.setHeader('Connection', 'keep-alive');
+        res.setHeader('X-Accel-Buffering', 'no');
+        res.flushHeaders();
+
+        // Send initial heartbeat
+        res.write(`event: connected\ndata: ${JSON.stringify({ message: 'SSE connected' })}\n\n`);
+
+        // Register client
+        sseManager.addClient(userId, res);
+
+        // Keep-alive ping every 30s to prevent timeout
+        const keepAlive = setInterval(() => {
+            res.write(`: ping\n\n`);
+        }, 30000);
+
+        // Cleanup on disconnect
+        req.on('close', () => {
+            clearInterval(keepAlive);
+        });
     }
 };

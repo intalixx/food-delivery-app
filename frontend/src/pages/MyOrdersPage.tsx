@@ -1,11 +1,15 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { IndianRupee, ChevronLeft, ChevronDown, Loader2, ShoppingBag, XCircle } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from 'sonner';
+import Cookies from 'js-cookie';
 import OrderStatusBadge from '@/components/shared/OrderStatusBadge';
+import ConfirmModal from '@/components/shared/ConfirmModal';
 import { orderService, type Order } from '@/services/orderService';
 import { useAuth } from '@/context/AuthContext';
+
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
 export default function MyOrdersPage() {
     const navigate = useNavigate();
@@ -15,6 +19,13 @@ export default function MyOrdersPage() {
     const [isLoading, setIsLoading] = useState(true);
     const [expandedItemId, setExpandedItemId] = useState<string | null>(null);
     const [cancellingId, setCancellingId] = useState<string | null>(null);
+
+    // Confirm modal state
+    const [confirmOpen, setConfirmOpen] = useState(false);
+    const [pendingCancelId, setPendingCancelId] = useState<string | null>(null);
+    const [pendingCancelCode, setPendingCancelCode] = useState<string>('');
+
+    const eventSourceRef = useRef<EventSource | null>(null);
 
     const fetchOrders = useCallback(async () => {
         try {
@@ -37,25 +48,85 @@ export default function MyOrdersPage() {
         }
     }, [authLoading, isAuthenticated, fetchOrders]);
 
+    /** SSE connection for real-time order status updates */
+    useEffect(() => {
+        if (!isAuthenticated) return;
+
+        const token = Cookies.get('auth_token');
+        if (!token) return;
+
+        // EventSource doesn't support custom headers, so we pass token as query param
+        const url = `${API_BASE_URL}/orders/stream?token=${encodeURIComponent(token)}`;
+        const es = new EventSource(url);
+        eventSourceRef.current = es;
+
+        es.addEventListener('order_status_update', (event) => {
+            try {
+                const data = JSON.parse(event.data) as {
+                    order_id: string;
+                    order_code: string;
+                    order_status: string;
+                };
+
+                // Update the order in state instantly (no page refresh needed)
+                setOrders(prev =>
+                    prev.map(o =>
+                        o.id === data.order_id
+                            ? { ...o, order_status: data.order_status }
+                            : o
+                    )
+                );
+
+                // Show toast notification
+                toast.info(`${data.order_code} — ${data.order_status}`, {
+                    duration: 5000,
+                    position: 'top-center',
+                });
+            } catch (err) {
+                console.error('SSE parse error:', err);
+            }
+        });
+
+        es.onerror = () => {
+            // Auto-reconnect is built into EventSource, no manual logic needed
+            console.warn('SSE connection error, will auto-reconnect...');
+        };
+
+        return () => {
+            es.close();
+            eventSourceRef.current = null;
+        };
+    }, [isAuthenticated]);
+
     const toggleExpand = (id: string) => {
         setExpandedItemId(prev => (prev === id ? null : id));
     };
 
-    const handleCancel = async (orderId: string, e: React.MouseEvent) => {
+    /** Open the confirm modal instead of window.confirm */
+    const openCancelModal = (orderId: string, orderCode: string, e: React.MouseEvent) => {
         e.stopPropagation();
+        setPendingCancelId(orderId);
+        setPendingCancelCode(orderCode);
+        setConfirmOpen(true);
+    };
 
-        if (!confirm('Are you sure you want to cancel this order?')) return;
+    /** Execute the actual cancellation */
+    const handleConfirmCancel = async () => {
+        if (!pendingCancelId) return;
 
-        setCancellingId(orderId);
+        setCancellingId(pendingCancelId);
         try {
-            const updated = await orderService.cancel(orderId);
-            setOrders(prev => prev.map(o => o.id === orderId ? { ...o, order_status: updated.order_status } : o));
+            const updated = await orderService.cancel(pendingCancelId);
+            setOrders(prev => prev.map(o => o.id === pendingCancelId ? { ...o, order_status: updated.order_status } : o));
             toast.success('Order cancelled successfully');
         } catch (error) {
             console.error('Cancel error:', error);
             toast.error(error instanceof Error ? error.message : 'Failed to cancel order');
         } finally {
             setCancellingId(null);
+            setConfirmOpen(false);
+            setPendingCancelId(null);
+            setPendingCancelCode('');
         }
     };
 
@@ -187,7 +258,7 @@ export default function MyOrdersPage() {
                                             {/* Cancel button — only for 'Order Received' */}
                                             {order.order_status === 'Order Received' && (
                                                 <button
-                                                    onClick={(e) => handleCancel(order.id, e)}
+                                                    onClick={(e) => openCancelModal(order.id, order.order_code, e)}
                                                     disabled={cancellingId === order.id}
                                                     className="flex items-center gap-1.5 py-1.5 px-3 rounded-full border border-red-200 dark:border-red-900/50 text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors cursor-pointer text-[12px] font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
                                                 >
@@ -208,6 +279,25 @@ export default function MyOrdersPage() {
                     ))
                 )}
             </div>
+
+            {/* Cancel Confirmation Modal */}
+            <ConfirmModal
+                open={confirmOpen}
+                onOpenChange={(open) => {
+                    setConfirmOpen(open);
+                    if (!open) {
+                        setPendingCancelId(null);
+                        setPendingCancelCode('');
+                    }
+                }}
+                title="Cancel Order"
+                description={`Are you sure you want to cancel order ${pendingCancelCode}? This action cannot be undone.`}
+                confirmLabel="Yes, Cancel Order"
+                cancelLabel="Keep Order"
+                variant="danger"
+                isLoading={cancellingId !== null}
+                onConfirm={handleConfirmCancel}
+            />
         </div>
     );
 }
