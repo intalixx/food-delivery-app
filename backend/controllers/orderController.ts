@@ -10,6 +10,7 @@ export const OrderController = {
      * POST /api/orders
      * Creates a new order with items.
      * Server-side validates: auth, address ownership, product existence, price snapshot.
+     * Snapshots the delivery address into order_addresses (no FK to addresses table).
      */
     async create(req: AuthRequest, res: Response): Promise<void> {
         try {
@@ -19,7 +20,7 @@ export const OrderController = {
                 items: { product_id: string; qty: number }[];
             };
 
-            // 1. Verify address belongs to this user
+            // 1. Verify address belongs to this user & snapshot its data
             const address = await AddressModel.getById(address_id);
             if (!address || address.user_id !== userId) {
                 res.status(400).json({ success: false, errors: ['Invalid delivery address'] });
@@ -60,10 +61,21 @@ export const OrderController = {
                 });
             }
 
-            // 3. Create order + items in a transaction
+            // 3. Prepare address snapshot data
+            const addressSnapshot = {
+                save_as: address.save_as,
+                pincode: address.pincode,
+                city: address.city,
+                state: address.state,
+                house_number: address.house_number,
+                street_locality: address.street_locality,
+                mobile: address.mobile,
+            };
+
+            // 4. Create order + address snapshot + items in a transaction
             const order = await OrderModel.createWithItems(
                 userId,
-                address_id,
+                addressSnapshot,
                 totalQty,
                 finalAmount,
                 orderItems
@@ -115,6 +127,10 @@ export const OrderController = {
     /**
      * PATCH /api/orders/:id/status
      * Update order status (admin/internal use) and broadcast via SSE.
+     * Enforces SEQUENTIAL status transitions:
+     *   Order Received → Preparing → Out for Delivery → Delivered
+     * Cancel allowed from any state except Delivered.
+     * No backward transitions. No skipping.
      */
     async updateStatus(req: AuthRequest, res: Response): Promise<void> {
         try {
@@ -123,7 +139,24 @@ export const OrderController = {
 
             const validStatuses = ['Order Received', 'Preparing', 'Out for Delivery', 'Delivered', 'Cancelled'];
             if (!validStatuses.includes(order_status)) {
-                res.status(400).json({ success: false, errors: [`Invalid status. Must be one of: ${validStatuses.join(', ')}`] });
+                res.status(400).json({
+                    success: false,
+                    errors: [`Invalid status. Must be one of: ${validStatuses.join(', ')}`]
+                });
+                return;
+            }
+
+            // Fetch current order to validate transition
+            const currentOrder = await OrderModel.getById(orderId);
+            if (!currentOrder) {
+                res.status(404).json({ success: false, errors: ['Order not found'] });
+                return;
+            }
+
+            // Validate sequential transition
+            const transition = OrderModel.validateStatusTransition(currentOrder.order_status, order_status);
+            if (transition.valid === false) {
+                res.status(400).json({ success: false, errors: [transition.reason] });
                 return;
             }
 
@@ -149,17 +182,41 @@ export const OrderController = {
 
     /**
      * PATCH /api/orders/:id/cancel
-     * Cancel an order (only if status is 'Order Received').
+     * Cancel an order — allowed from any state EXCEPT Delivered and Cancelled.
      */
     async cancel(req: AuthRequest, res: Response): Promise<void> {
         try {
             const userId = req.user!.id;
-            const cancelled = await OrderModel.cancel(req.params.id as string, userId);
+            const orderId = req.params.id as string;
 
+            // Fetch current order for a descriptive error
+            const currentOrder = await OrderModel.getById(orderId);
+            if (!currentOrder || currentOrder.user_id !== userId) {
+                res.status(404).json({ success: false, errors: ['Order not found'] });
+                return;
+            }
+
+            if (currentOrder.order_status === 'Delivered') {
+                res.status(400).json({
+                    success: false,
+                    errors: ['Order is already delivered and cannot be cancelled.']
+                });
+                return;
+            }
+
+            if (currentOrder.order_status === 'Cancelled') {
+                res.status(400).json({
+                    success: false,
+                    errors: ['Order is already cancelled.']
+                });
+                return;
+            }
+
+            const cancelled = await OrderModel.cancel(orderId, userId);
             if (!cancelled) {
                 res.status(400).json({
                     success: false,
-                    errors: ['Cannot cancel this order. It may have already been processed or does not exist.']
+                    errors: ['Cannot cancel this order.']
                 });
                 return;
             }
