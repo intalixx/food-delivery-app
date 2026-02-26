@@ -20,7 +20,11 @@ app.use(cors({
 }));
 app.use(express.json());
 app.use(cookieParser());
-app.use('/uploads', express.static(path.resolve(__dirname, 'uploads')));
+app.use('/uploads', express.static(
+    fs.existsSync(path.resolve(__dirname, 'uploads'))
+        ? path.resolve(__dirname, 'uploads')        // dev: backend/uploads
+        : path.resolve(__dirname, '..', 'uploads')   // prod: backend/dist/../uploads
+));
 
 // Root
 app.get('/', (_req, res) => {
