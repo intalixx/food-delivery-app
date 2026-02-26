@@ -1,7 +1,7 @@
 import { Request, Response } from 'express';
 import { UserModel } from '../models/userModel';
 import fs from 'fs';
-import path from 'path';
+import { resolveImagePath } from '../utils/paths';
 
 export const UserController = {
     // GET /api/users
@@ -70,7 +70,7 @@ export const UserController = {
             if (req.file) {
                 updateFields.image_path = `/uploads/users/${req.file.filename}`;
                 if (existing.image_path) {
-                    const oldPath = path.resolve(__dirname, '..', existing.image_path.replace(/^\//, ''));
+                    const oldPath = resolveImagePath(existing.image_path);
                     fs.unlink(oldPath, () => { });
                 }
             }
@@ -98,7 +98,7 @@ export const UserController = {
             }
 
             if (existing.image_path) {
-                const filePath = path.resolve(__dirname, '..', existing.image_path.replace(/^\//, ''));
+                const filePath = resolveImagePath(existing.image_path);
                 fs.unlink(filePath, () => { });
             }
 

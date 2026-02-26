@@ -5,13 +5,24 @@ import path from 'path';
 import fs from 'fs';
 import cookieParser from 'cookie-parser';
 
-// Resolve .env path — works from both backend/ (dev) and backend/dist/ (production)
+// Resolve .env path based on APP_ENVIRONMENT
+// In dev (ts-node): __dirname = backend/ → ../.env = project root
+// In prod (node dist/): __dirname = backend/dist/ → ../../.env = project root
 const envPath = path.resolve(__dirname, '..', '.env');
 const envPathAlt = path.resolve(__dirname, '..', '..', '.env');
 dotenv.config({ path: fs.existsSync(envPath) ? envPath : envPathAlt });
 
 const app = express();
 const PORT = process.env.PORT;
+const isDev = process.env.APP_ENVIRONMENT === 'development';
+
+// Uploads directory
+// dev:  backend/uploads/
+// prod: backend/dist/uploads/
+const uploadsDir = path.resolve(__dirname, isDev ? 'uploads' : 'uploads');
+// Note: path.resolve(__dirname, 'uploads') works for BOTH because:
+//   dev  → __dirname = backend/       → backend/uploads/
+//   prod → __dirname = backend/dist/  → backend/dist/uploads/
 
 // Middleware
 app.use(cors({
@@ -20,11 +31,7 @@ app.use(cors({
 }));
 app.use(express.json());
 app.use(cookieParser());
-app.use('/uploads', express.static(
-    fs.existsSync(path.resolve(__dirname, 'uploads'))
-        ? path.resolve(__dirname, 'uploads')        // dev: backend/uploads
-        : path.resolve(__dirname, '..', 'uploads')   // prod: backend/dist/../uploads
-));
+app.use('/uploads', express.static(uploadsDir));
 
 // Root
 app.get('/', (_req, res) => {
@@ -33,7 +40,11 @@ app.get('/', (_req, res) => {
 
 // Health check
 app.get('/api/health', (_req, res) => {
-    res.json({ status: 'ok', uptime: process.uptime() });
+    res.json({
+        status: 'ok',
+        environment: process.env.APP_ENVIRONMENT,
+        uptime: process.uptime()
+    });
 });
 
 // Routes
@@ -53,7 +64,7 @@ app.use('/api/orders', orderRoutes);
 
 // Start server
 app.listen(PORT, () => {
-    console.log(`Server running on http://localhost:${PORT}`);
+    console.log(`[${process.env.APP_ENVIRONMENT}] Server running on http://localhost:${PORT}`);
 });
 
 export default app;

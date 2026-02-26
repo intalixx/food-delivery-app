@@ -1,7 +1,7 @@
 import { Request, Response } from 'express';
 import { ProductModel } from '../models/productModel';
 import fs from 'fs';
-import path from 'path';
+import { resolveImagePath } from '../utils/paths';
 
 export const ProductController = {
     // GET /api/products
@@ -74,7 +74,7 @@ export const ProductController = {
                 updateFields.image_path = `/uploads/products/${req.file.filename}`;
                 // Delete old image if exists
                 if (existing.image_path) {
-                    const oldPath = path.resolve(__dirname, '..', existing.image_path.replace(/^\//, ''));
+                    const oldPath = resolveImagePath(existing.image_path);
                     fs.unlink(oldPath, () => { });
                 }
             }
@@ -103,7 +103,7 @@ export const ProductController = {
 
             // Delete image file
             if (existing.image_path) {
-                const filePath = path.resolve(__dirname, '..', existing.image_path.replace(/^\//, ''));
+                const filePath = resolveImagePath(existing.image_path);
                 fs.unlink(filePath, () => { });
             }
 

@@ -1,13 +1,14 @@
 import multer from 'multer';
 import path from 'path';
 import fs from 'fs';
+import { getUploadsDir } from '../utils/paths';
 
 const ALLOWED_TYPES = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp', 'image/svg+xml', 'image/bmp', 'image/tiff'];
 const MAX_SIZE = 5 * 1024 * 1024; // 5 MB
 
 const storage = multer.diskStorage({
     destination: (_req, _file, cb) => {
-        const uploadDir = path.resolve(__dirname, '..', 'uploads', 'products');
+        const uploadDir = path.resolve(getUploadsDir(), 'products');
         if (!fs.existsSync(uploadDir)) {
             fs.mkdirSync(uploadDir, { recursive: true });
         }
