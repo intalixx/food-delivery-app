@@ -248,11 +248,6 @@ export default function MyOrdersPage() {
                                                 <span className="text-[12px] text-gray-400 font-medium">
                                                     Ordered: {formatDate(order.created_at)}
                                                 </span>
-                                                {order.updated_at !== order.created_at && (
-                                                    <span className="text-[11px] text-gray-400 font-medium">
-                                                        Updated: {formatDate(order.updated_at)}
-                                                    </span>
-                                                )}
                                             </div>
 
                                             {/* Cancel button — only for 'Order Received' */}
