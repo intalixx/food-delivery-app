@@ -15,7 +15,7 @@ describe('Products API', () => {
     let productId: string;
 
     beforeAll(async () => {
-        const cat = await createTestCategory('Product Test Category');
+        const cat = await createTestCategory(`Product Test Category ${Date.now()}`);
         categoryId = cat.id;
     });
 
@@ -23,9 +23,10 @@ describe('Products API', () => {
     describe('POST /api/products', () => {
 
         it('should create a product with valid fields', async () => {
+            const uniqueName = `Margherita Pizza ${Date.now()}`;
             const res = await api
                 .post('/api/products')
-                .field('product_name', 'Margherita Pizza')
+                .field('product_name', uniqueName)
                 .field('description', 'Classic Italian pizza')
                 .field('price', '299.99')
                 .field('category_id', categoryId);
@@ -33,20 +34,21 @@ describe('Products API', () => {
             expect(res.status).toBe(201);
             expect(res.body.success).toBe(true);
             expect(res.body.data).toHaveProperty('id');
-            expect(res.body.data.product_name).toBe('Margherita Pizza');
+            expect(res.body.data.product_name).toBe(uniqueName);
             expect(Number(res.body.data.price)).toBe(299.99);
             productId = res.body.data.id;
         });
 
         it('should create a product without description (optional field)', async () => {
+            const uniqueName = `Plain Burger ${Date.now()}`;
             const res = await api
                 .post('/api/products')
-                .field('product_name', 'Plain Burger')
+                .field('product_name', uniqueName)
                 .field('price', '150')
                 .field('category_id', categoryId);
 
             expect(res.status).toBe(201);
-            expect(res.body.data.product_name).toBe('Plain Burger');
+            expect(res.body.data.product_name).toBe(uniqueName);
         });
 
         it('should reject missing product_name', async () => {
@@ -214,7 +216,7 @@ describe('Products API', () => {
 
             expect(res.status).toBe(200);
             expect(res.body.data.id).toBe(productId);
-            expect(res.body.data.product_name).toBe('Margherita Pizza');
+            expect(res.body.data.product_name).toMatch(/^Margherita Pizza/);
         });
 
         it('should return 404 for non-existent UUID', async () => {
@@ -233,12 +235,13 @@ describe('Products API', () => {
     describe('PUT /api/products/:id', () => {
 
         it('should update product_name only', async () => {
+            const uniqueName = `Supreme Pizza ${Date.now()}`;
             const res = await api
                 .put(`/api/products/${productId}`)
-                .field('product_name', 'Supreme Pizza');
+                .field('product_name', uniqueName);
 
             expect(res.status).toBe(200);
-            expect(res.body.data.product_name).toBe('Supreme Pizza');
+            expect(res.body.data.product_name).toBe(uniqueName);
         });
 
         it('should update price only', async () => {
@@ -284,7 +287,7 @@ describe('Products API', () => {
         beforeAll(async () => {
             const res = await api
                 .post('/api/products')
-                .field('product_name', 'To Delete Product')
+                .field('product_name', `To Delete Product ${Date.now()}`)
                 .field('price', '50')
                 .field('category_id', categoryId);
             toDeleteId = res.body.data.id;

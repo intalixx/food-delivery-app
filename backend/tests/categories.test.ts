@@ -17,24 +17,26 @@ describe('Categories API', () => {
     describe('POST /api/categories', () => {
 
         it('should create a category with valid name', async () => {
+            const uniqueName = `Pizza ${Date.now()}`;
             const res = await api
                 .post('/api/categories')
-                .send({ category_name: 'Pizza' });
+                .send({ category_name: uniqueName });
 
             expect(res.status).toBe(201);
             expect(res.body.success).toBe(true);
             expect(res.body.data).toHaveProperty('id');
-            expect(res.body.data.category_name).toBe('Pizza');
+            expect(res.body.data.category_name).toBe(uniqueName);
             categoryId = res.body.data.id;
         });
 
         it('should trim whitespace from category_name', async () => {
+            const uniqueName = `Burgers ${Date.now()}`;
             const res = await api
                 .post('/api/categories')
-                .send({ category_name: '  Burgers  ' });
+                .send({ category_name: `  ${uniqueName}  ` });
 
             expect(res.status).toBe(201);
-            expect(res.body.data.category_name).toBe('Burgers');
+            expect(res.body.data.category_name).toBe(uniqueName);
         });
 
         it('should reject empty body', async () => {
@@ -85,12 +87,13 @@ describe('Categories API', () => {
         });
 
         it('should allow hyphens and ampersands in category_name', async () => {
+            const uniqueName = `Fish & Chips - ${Date.now()}`;
             const res = await api
                 .post('/api/categories')
-                .send({ category_name: "Fish & Chips" });
+                .send({ category_name: uniqueName });
 
             expect(res.status).toBe(201);
-            expect(res.body.data.category_name).toBe("Fish & Chips");
+            expect(res.body.data.category_name).toBe(uniqueName);
         });
 
         it('should reject numeric category_name type', async () => {
@@ -156,11 +159,11 @@ describe('Categories API', () => {
         it('should update category_name', async () => {
             const res = await api
                 .put(`/api/categories/${categoryId}`)
-                .send({ category_name: 'Updated Pizza' });
+                .send({ category_name: `Updated Pizza ${Date.now()}` });
 
             expect(res.status).toBe(200);
             expect(res.body.success).toBe(true);
-            expect(res.body.data.category_name).toBe('Updated Pizza');
+            expect(res.body.data.category_name).toMatch(/^Updated Pizza/);
         });
 
         it('should reject update with empty body', async () => {
