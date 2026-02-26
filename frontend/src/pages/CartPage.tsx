@@ -1,12 +1,23 @@
+import { useState } from 'react';
 import { useCart } from '@/hooks/useCart';
-import { IndianRupee, Minus, Plus, ChevronLeft, ShoppingCart, Trash2 } from 'lucide-react';
+import { useAuth } from '@/context/AuthContext';
+import { IndianRupee, Minus, Plus, ChevronLeft, ShoppingCart, Trash2, Loader2 } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from 'sonner';
+import AuthModal from '@/components/shared/AuthModal';
+import AddressPickerModal from '@/components/shared/AddressPickerModal';
+import { orderService } from '@/services/orderService';
+import type { Address } from '@/services/addressService';
 
 export default function CartPage() {
     const { items, updateQuantity, totalPrice, clearCart, removeFromCart } = useCart();
+    const { isAuthenticated, isLoading: authLoading } = useAuth();
     const navigate = useNavigate();
+
+    const [showAuthModal, setShowAuthModal] = useState(false);
+    const [showAddressPicker, setShowAddressPicker] = useState(false);
+    const [isPlacingOrder, setIsPlacingOrder] = useState(false);
 
     const totalItemCount = items.reduce((acc, item) => acc + item.quantity, 0);
     const finalTotal = totalPrice;
@@ -19,6 +30,44 @@ export default function CartPage() {
     const handleRemoveItem = (id: string) => {
         removeFromCart(id);
         toast.success('Product removed from cart');
+    };
+
+    /** Checkout flow: auth check → address selection → place order */
+    const handleCheckout = () => {
+        if (authLoading) return;
+
+        // Step 1: Check authentication
+        if (!isAuthenticated) {
+            setShowAuthModal(true);
+            return;
+        }
+
+        // Step 2: Open address picker (it auto-handles "no addresses" case)
+        setShowAddressPicker(true);
+    };
+
+    /** Called when user selects an address from the picker */
+    const handleAddressSelected = async (address: Address) => {
+        setIsPlacingOrder(true);
+        try {
+            // Build order items from cart
+            const checkoutItems = items.map(item => ({
+                product_id: item.id,
+                qty: item.quantity,
+            }));
+
+            const order = await orderService.create(address.id, checkoutItems);
+
+            // Success! Clear cart and navigate to orders
+            clearCart();
+            toast.success(`Order placed! Code: ${order.order_code}`, { duration: 5000 });
+            navigate('/profile/orders');
+        } catch (error) {
+            console.error('Checkout error:', error);
+            toast.error(error instanceof Error ? error.message : 'Failed to place order. Please try again.');
+        } finally {
+            setIsPlacingOrder(false);
+        }
     };
 
     if (items.length === 0) {
@@ -167,13 +216,38 @@ export default function CartPage() {
                             </div>
                         </div>
 
-                        <button className="w-full py-2.5 bg-primary text-white font-bold text-[14px] tracking-wide rounded-xl shadow-[0_4px_14px_rgba(34,197,94,0.25)] hover:shadow-[0_6px_20px_rgba(34,197,94,0.3)] active:scale-[0.98] transition-shadow cursor-pointer">
-                            CHECKOUT
+                        <button
+                            onClick={handleCheckout}
+                            disabled={isPlacingOrder}
+                            className="w-full py-2.5 bg-primary text-white font-bold text-[14px] tracking-wide rounded-xl shadow-[0_4px_14px_rgba(34,197,94,0.25)] hover:shadow-[0_6px_20px_rgba(34,197,94,0.3)] active:scale-[0.98] transition-shadow cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                        >
+                            {isPlacingOrder ? (
+                                <>
+                                    <Loader2 className="w-4 h-4 animate-spin" />
+                                    PLACING ORDER...
+                                </>
+                            ) : (
+                                'CHECKOUT'
+                            )}
                         </button>
                     </div>
                 </div>
 
             </div>
+
+            {/* Auth Modal — opens when user is not authenticated */}
+            <AuthModal
+                open={showAuthModal}
+                onOpenChange={setShowAuthModal}
+                mode="login"
+            />
+
+            {/* Address Picker Modal — opens after auth is confirmed */}
+            <AddressPickerModal
+                open={showAddressPicker}
+                onOpenChange={setShowAddressPicker}
+                onSelect={handleAddressSelected}
+            />
         </div>
     );
 }
