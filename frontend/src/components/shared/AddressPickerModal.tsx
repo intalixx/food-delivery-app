@@ -130,7 +130,7 @@ export default function AddressPickerModal({ open, onOpenChange, onSelect }: Add
                                         </div>
                                         {selectedId === addr.id && (
                                             <div className="w-6 h-6 rounded-full bg-primary flex items-center justify-center shrink-0 ml-2">
-                                                <Check className="w-3.5 h-3.5 text-white stroke-[3]" />
+                                                <Check className="w-3.5 h-3.5 text-white stroke-3" />
                                             </div>
                                         )}
                                     </motion.button>
