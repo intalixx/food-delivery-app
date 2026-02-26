@@ -2,12 +2,16 @@ import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
 import path from 'path';
+import fs from 'fs';
 import cookieParser from 'cookie-parser';
 
-dotenv.config({ path: path.resolve(__dirname, '..', '.env') });
+// Resolve .env path — works from both backend/ (dev) and backend/dist/ (production)
+const envPath = path.resolve(__dirname, '..', '.env');
+const envPathAlt = path.resolve(__dirname, '..', '..', '.env');
+dotenv.config({ path: fs.existsSync(envPath) ? envPath : envPathAlt });
 
 const app = express();
-const PORT = process.env.PORT || 8000;
+const PORT = process.env.PORT;
 
 // Middleware
 app.use(cors({
