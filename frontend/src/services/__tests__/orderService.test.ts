@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, Mock } from 'vitest';
 import { orderService, CheckoutItem } from '../orderService';
 import { apiFetch } from '../api';
 
@@ -28,7 +28,7 @@ describe('orderService', () => {
     describe('create()', () => {
         it('should call apiFetch with POST and correct body', async () => {
             // Setup
-            (apiFetch as vi.Mock).mockResolvedValueOnce({ success: true, data: mockOrder });
+            (apiFetch as Mock).mockResolvedValueOnce({ success: true, data: mockOrder });
             const addressId = 'a-123';
             const items: CheckoutItem[] = [{ product_id: 'p-1', qty: 2 }];
 
@@ -44,7 +44,7 @@ describe('orderService', () => {
         });
 
         it('should throw error if apiFetch throws (e.g. valid failure)', async () => {
-            (apiFetch as vi.Mock).mockRejectedValueOnce(new Error('Address not found'));
+            (apiFetch as Mock).mockRejectedValueOnce(new Error('Address not found'));
 
             await expect(orderService.create('bad-address', []))
                 .rejects.toThrow('Address not found');
@@ -53,7 +53,7 @@ describe('orderService', () => {
 
     describe('getMyOrders()', () => {
         it('should fetch user orders using GET', async () => {
-            (apiFetch as vi.Mock).mockResolvedValueOnce({ success: true, data: [mockOrder] });
+            (apiFetch as Mock).mockResolvedValueOnce({ success: true, data: [mockOrder] });
 
             const result = await orderService.getMyOrders();
 
@@ -64,7 +64,7 @@ describe('orderService', () => {
 
     describe('getById()', () => {
         it('should fetch single order by id', async () => {
-            (apiFetch as vi.Mock).mockResolvedValueOnce({ success: true, data: mockOrder });
+            (apiFetch as Mock).mockResolvedValueOnce({ success: true, data: mockOrder });
 
             const result = await orderService.getById('o-123');
 
@@ -76,7 +76,7 @@ describe('orderService', () => {
     describe('cancel()', () => {
         it('should send PATCH request to cancel order', async () => {
             const cancelledOrder = { ...mockOrder, order_status: 'Cancelled' };
-            (apiFetch as vi.Mock).mockResolvedValueOnce({ success: true, data: cancelledOrder });
+            (apiFetch as Mock).mockResolvedValueOnce({ success: true, data: cancelledOrder });
 
             const result = await orderService.cancel('o-123');
 
