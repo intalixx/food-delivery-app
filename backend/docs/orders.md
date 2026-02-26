@@ -13,7 +13,9 @@ Base URL: `http://localhost:8000/api/orders`
 > **Content-Type:** `application/json`
 > **Auth:** Required (Bearer Token)
 
-Creates a new order with items. The server validates product existence, snapshots current prices from the database, verifies address ownership, and wraps everything in a database transaction.
+Creates a new order with items. The server validates product existence, snapshots current prices from the database, verifies address ownership, **snapshots the delivery address** into `order_addresses`, and wraps everything in a database transaction.
+
+> **Address Snapshot:** The delivery address is copied into the `order_addresses` table at order time. If the user later edits or deletes their address, the order's address is preserved exactly as it was when placed.
 
 ### Request Body
 
@@ -69,12 +71,23 @@ curl -X POST http://localhost:8000/api/orders \
     "id": "order-uuid",
     "order_code": "ORD-A7X3B2",
     "user_id": "user-uuid",
-    "address_id": "address-uuid",
     "total_qty": 3,
     "final_amount": 460.0,
     "order_status": "Order Received",
     "created_at": "2026-02-26T05:00:00.000Z",
     "updated_at": "2026-02-26T05:00:00.000Z",
+    "address": {
+      "id": "order-address-uuid",
+      "order_id": "order-uuid",
+      "save_as": "Home",
+      "pincode": "400001",
+      "city": "Mumbai",
+      "state": "Maharashtra",
+      "house_number": "12A",
+      "street_locality": "MG Road",
+      "mobile": "9876543210",
+      "created_at": "2026-02-26T05:00:00.000Z"
+    },
     "items": [
       {
         "id": "item-uuid-1",
@@ -146,7 +159,7 @@ curl -X POST http://localhost:8000/api/orders \
 
 > **Auth:** Required (Bearer Token)
 
-Returns all orders for the authenticated user, sorted by most recent first. Each order includes its items.
+Returns all orders for the authenticated user, sorted by most recent first. Each order includes its address snapshot and items.
 
 ```bash
 curl http://localhost:8000/api/orders/my \
@@ -163,12 +176,23 @@ curl http://localhost:8000/api/orders/my \
       "id": "order-uuid",
       "order_code": "ORD-A7X3B2",
       "user_id": "user-uuid",
-      "address_id": "address-uuid",
       "total_qty": 3,
       "final_amount": 460.0,
       "order_status": "Order Received",
       "created_at": "2026-02-26T05:00:00.000Z",
       "updated_at": "2026-02-26T05:00:00.000Z",
+      "address": {
+        "id": "order-address-uuid",
+        "order_id": "order-uuid",
+        "save_as": "Home",
+        "pincode": "400001",
+        "city": "Mumbai",
+        "state": "Maharashtra",
+        "house_number": "12A",
+        "street_locality": "MG Road",
+        "mobile": "9876543210",
+        "created_at": "2026-02-26T05:00:00.000Z"
+      },
       "items": [
         {
           "id": "item-uuid-1",
@@ -212,7 +236,7 @@ curl http://localhost:8000/api/orders/my \
 
 > **Auth:** Required (Bearer Token)
 
-Returns a single order with its items. The order must belong to the authenticated user.
+Returns a single order with its address snapshot and items. The order must belong to the authenticated user.
 
 ```bash
 curl http://localhost:8000/api/orders/<order-uuid> \
@@ -228,12 +252,23 @@ curl http://localhost:8000/api/orders/<order-uuid> \
     "id": "order-uuid",
     "order_code": "ORD-A7X3B2",
     "user_id": "user-uuid",
-    "address_id": "address-uuid",
     "total_qty": 3,
     "final_amount": 460.00,
     "order_status": "Preparing",
     "created_at": "2026-02-26T05:00:00.000Z",
     "updated_at": "2026-02-26T05:10:00.000Z",
+    "address": {
+      "id": "order-address-uuid",
+      "order_id": "order-uuid",
+      "save_as": "Home",
+      "pincode": "400001",
+      "city": "Mumbai",
+      "state": "Maharashtra",
+      "house_number": "12A",
+      "street_locality": "MG Road",
+      "mobile": "9876543210",
+      "created_at": "2026-02-26T05:00:00.000Z"
+    },
     "items": [ ... ]
   }
 }
@@ -253,7 +288,7 @@ curl http://localhost:8000/api/orders/<order-uuid> \
 
 > **Auth:** Required (Bearer Token)
 
-Cancels an order. **Only orders with status `Order Received` can be cancelled.** Orders that have progressed to `Preparing`, `Out for Delivery`, or `Delivered` cannot be cancelled.
+Cancels an order. **Allowed from any state except `Delivered` and `Cancelled`.** Orders that have reached `Delivered` or are already `Cancelled` cannot be cancelled.
 
 ```bash
 curl -X PATCH http://localhost:8000/api/orders/<order-uuid>/cancel \
@@ -269,7 +304,6 @@ curl -X PATCH http://localhost:8000/api/orders/<order-uuid>/cancel \
     "id": "order-uuid",
     "order_code": "ORD-A7X3B2",
     "user_id": "user-uuid",
-    "address_id": "address-uuid",
     "total_qty": 3,
     "final_amount": 460.0,
     "order_status": "Cancelled",
@@ -280,14 +314,21 @@ curl -X PATCH http://localhost:8000/api/orders/<order-uuid>/cancel \
 }
 ```
 
-### Error (400 - Cannot Cancel)
+### Error (400 - Already Delivered)
 
 ```json
 {
   "success": false,
-  "errors": [
-    "Cannot cancel this order. It may have already been processed or does not exist."
-  ]
+  "errors": ["Order is already delivered and cannot be cancelled."]
+}
+```
+
+### Error (400 - Already Cancelled)
+
+```json
+{
+  "success": false,
+  "errors": ["Order is already cancelled."]
 }
 ```
 
@@ -307,6 +348,14 @@ curl -X PATCH http://localhost:8000/api/orders/<order-uuid>/cancel \
 > **Auth:** Required (Bearer Token)
 
 Updates the status of an order. Typically used by admin or internal systems to progress an order through its lifecycle. On success, an SSE event is automatically pushed to the user's active connections for real-time updates (see [SSE docs](./sse-order-status.md)).
+
+**Sequential transitions are enforced:**
+
+```
+Order Received → Preparing → Out for Delivery → Delivered
+```
+
+Cancel is allowed from any active state (not Delivered or Cancelled). Backward transitions and skipping are not allowed.
 
 ### Request Body
 
@@ -340,7 +389,6 @@ curl -X PATCH http://localhost:8000/api/orders/<order-uuid>/status \
     "id": "order-uuid",
     "order_code": "ORD-A7X3B2",
     "user_id": "user-uuid",
-    "address_id": "address-uuid",
     "total_qty": 3,
     "final_amount": 460.0,
     "order_status": "Preparing",
@@ -373,6 +421,17 @@ data: {"order_id":"order-uuid","order_code":"ORD-A7X3B2","order_status":"Prepari
 }
 ```
 
+### Error (400 - Invalid Transition)
+
+```json
+{
+  "success": false,
+  "errors": [
+    "Invalid transition. Current status is \"Order Received\", next allowed status is \"Preparing\". Cannot jump to \"Delivered\"."
+  ]
+}
+```
+
 ### Error (404 - Order Not Found)
 
 ```json
@@ -390,12 +449,30 @@ data: {"order_id":"order-uuid","order_code":"ORD-A7X3B2","order_status":"Prepari
 | `id`           | UUID      | Primary key, auto-generated                      |
 | `order_code`   | string    | Unique, human-readable code (e.g., `ORD-A7X3B2`) |
 | `user_id`      | UUID      | References `users(id)`                           |
-| `address_id`   | UUID      | References `addresses(id)`                       |
 | `total_qty`    | integer   | Total quantity across all items                  |
 | `final_amount` | decimal   | Total cost of order                              |
 | `order_status` | enum      | One of the statuses listed below                 |
 | `created_at`   | timestamp | Auto-set on creation                             |
 | `updated_at`   | timestamp | Auto-updated on modification                     |
+
+> **Note:** The `orders` table does **not** have an `address_id` foreign key. The delivery address is snapshotted into `order_addresses` instead.
+
+### Order Address (Snapshot)
+
+| Field             | Type      | Description                                         |
+| ----------------- | --------- | --------------------------------------------------- |
+| `id`              | UUID      | Primary key, auto-generated                         |
+| `order_id`        | UUID      | References `orders(id)`, CASCADE delete, **UNIQUE** |
+| `save_as`         | string    | Address label (e.g., `Home`, `Work`)                |
+| `pincode`         | string    | 6-digit pincode                                     |
+| `city`            | string    | City name                                           |
+| `state`           | string    | State name                                          |
+| `house_number`    | string    | House/flat number                                   |
+| `street_locality` | string    | Street and locality                                 |
+| `mobile`          | string    | 10-digit mobile number                              |
+| `created_at`      | timestamp | Auto-set on creation                                |
+
+> **Why snapshot?** If the user later edits or deletes their saved address, the order's delivery address is preserved exactly as it was when placed. This is a 1:1 relationship — each order has exactly one address snapshot.
 
 ### Order Item
 
@@ -423,14 +500,28 @@ data: {"order_id":"order-uuid","order_code":"ORD-A7X3B2","order_status":"Prepari
 | `Delivered`        | Order completed                 | 🟢 Green    |
 | `Cancelled`        | Order was cancelled by the user | 🔴 Red      |
 
+### Status Transition Rules
+
+```
+Order Received → Preparing → Out for Delivery → Delivered
+       ↓              ↓              ↓
+   Cancelled      Cancelled      Cancelled
+```
+
+- **Forward only** — no backward transitions, no skipping steps
+- **Cancel** — allowed from `Order Received`, `Preparing`, or `Out for Delivery`
+- **Terminal states** — `Delivered` and `Cancelled` allow no further transitions
+
 ---
 
 ## Security Notes
 
 1. **All endpoints require authentication** — JWT token via Bearer header or cookie.
 2. **Address ownership** — Server verifies `address.user_id === authenticated_user.id` before creating an order.
-3. **Product validation** — Each product ID is validated against the database; missing products cause a `400` error.
-4. **Price integrity** — Prices are fetched from the database at order time, not from the client.
-5. **Transaction safety** — Order + items are inserted within a PostgreSQL transaction. On failure, everything rolls back.
-6. **Cancel restriction** — Only `Order Received` status allows cancellation. Combined with user ownership check.
-7. **UUID validation** — All ID parameters are validated as proper UUIDs before hitting the database.
+3. **Address snapshot** — Delivery address is copied into `order_addresses` at order time, decoupled from the user's address book. No FK dependency on the `addresses` table.
+4. **Product validation** — Each product ID is validated against the database; missing products cause a `400` error.
+5. **Price integrity** — Prices are fetched from the database at order time, not from the client.
+6. **Transaction safety** — Order + address snapshot + items are inserted within a PostgreSQL transaction. On failure, everything rolls back.
+7. **Cancel restriction** — Only active orders (not `Delivered` or `Cancelled`) can be cancelled. Combined with user ownership check.
+8. **Sequential status enforcement** — Status updates must follow the defined flow. Backward transitions and step-skipping are rejected.
+9. **UUID validation** — All ID parameters are validated as proper UUIDs before hitting the database.
