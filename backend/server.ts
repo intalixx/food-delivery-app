@@ -7,7 +7,7 @@ import cookieParser from 'cookie-parser';
 dotenv.config({ path: path.resolve(__dirname, '..', '.env') });
 
 const app = express();
-const PORT = process.env.PORT || 8000;
+const PORT = process.env.PORT;
 
 // Middleware
 const allowedOrigins = [
